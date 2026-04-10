@@ -1,26 +1,405 @@
 @import "tailwindcss";
 
+/* Display/body: Funnel Sans · accent: Perfectly Nineties (next/font/local in layout.tsx) */
+
+/* ── Coachella 2026 — site palette (coachella.com) ───────────────────
+   Teal #00404F, cream #F9E7CD, forest #294E2D + grain texture.
+──────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* --font-nineties set on <html> via next/font/local */
+
+  /* Brand (from coachella.com) */
+  --teal: #00404f;
+  --cream: #f9e7cd;
+  --green: #294e2d;
+
+  /* Aliases — keep Tailwind class names working (cyan/blue/yellow) */
+  --cyan: var(--teal);
+  --blue: var(--green);
+  --blue-hover: #356838;
+  --yellow: #e8d4b5;
+  --yellow-light: #3f6d44;
+  --yellow-dark: #1e3a22;
+  --cyan-dim: #2d5f6a;
+  --black: #0c1f24;
+
+  --white: #faf6ef;
+
+  /* Supporting */
+  --coral: #b85c4a;
+  --purple: #4a5e7a;
+
+  --gray-400: #5a7a80;
+  --gray-600: #3d5c62;
+
+  /* Semantic */
+  --background: var(--cream);
+  --foreground: var(--teal);
+  --accent: var(--green);
+  --accent-hover: var(--blue-hover);
+  --on-accent: var(--cream);
+  --surface: #152920;
+  --surface-light: var(--green);
+  --surface-lighter: #3a6240;
+  --border: #c9b899;
+  --muted: #4d6d72;
+
+  /* Analogous hovers — teal/cream only (no harsh jump to dark or white) */
+  --hover-wash: color-mix(in srgb, var(--teal) 7%, var(--cream));
+  --hover-wash-strong: color-mix(in srgb, var(--teal) 12%, var(--cream));
+  --expand-wash: color-mix(in srgb, var(--teal) 13%, var(--cream));
+  --panel-tint: color-mix(in srgb, var(--cream) 88%, var(--teal));
+  --accent-hover-soft: color-mix(in srgb, var(--green) 82%, var(--teal));
+
+  /* Stage pip colors — harmonized to teal / green / desert */
+  --stage-coachella: var(--teal);
+  --stage-outdoor: var(--green);
+  --stage-sonora: #5c7a6e;
+  --stage-gobi: #3d8b6a;
+  --stage-mojave: #8b6a4a;
+  --stage-sahara: #4a6b8c;
+  --stage-yuma: #2a5560;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-surface: var(--surface);
+  --color-surface-light: var(--surface-light);
+  --color-surface-lighter: var(--surface-lighter);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-yellow: var(--yellow);
+  --color-blue: var(--blue);
+  --color-cyan: var(--cyan);
+  --color-coral: var(--coral);
+  --color-purple: var(--purple);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-nineties: var(--font-nineties);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── SVG noise data URI (film grain) ───────────────────────────────── */
+
+/* ── Base ──────────────────────────────────────────────────────────── */
+
+* {
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  background: var(--background);
 }
 
 body {
+  position: relative;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+/* Full-page grain (multiply reads well on cream) — behind page content */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px;
+  mix-blend-mode: multiply;
+}
+
+/* Finer grain layer */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 220px;
+  mix-blend-mode: overlay;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ── Selection ────────────────────────────────────────────────────── */
+
+::selection {
+  background: var(--teal);
+  color: var(--cream);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--green);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--teal);
+}
+
+/* ── Global noise overlay (pages opt-in; stronger than body grain) ─ */
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px;
+  mix-blend-mode: multiply;
+}
+
+/* Sections: extra grain (hero, strips, headers) */
+.grain-strong {
+  position: relative;
+  z-index: 0;
+}
+
+.grain-strong::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.11;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px;
+  mix-blend-mode: multiply;
+}
+
+.grain-strong > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Dark panels — grain sits on top for print/poster feel */
+.grain-dark {
+  position: relative;
+}
+
+.grain-dark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.14;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 160px;
+  mix-blend-mode: soft-light;
+}
+
+.grain-dark > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* ── Scratchboard / organic shapes (not perfect rectangles) ──────── */
+
+.font-nineties {
+  font-family: var(--font-nineties), ui-sans-serif, system-ui, sans-serif;
+}
+
+.scratch-blob {
+  border-radius: 42% 58% 62% 38% / 44% 36% 64% 56%;
+}
+
+.scratch-pill {
+  border-radius: 0.45rem 1.35rem 0.85rem 0.55rem / 0.65rem 0.4rem 1rem 0.5rem;
+}
+
+.scratch-panel {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-tint);
+  border-radius: 0.25rem 1.15rem 0.65rem 0.85rem / 0.55rem 0.35rem 0.95rem 0.45rem;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teal) 18%, transparent);
+}
+
+.scratch-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 160px;
+  mix-blend-mode: multiply;
+}
+
+.scratch-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Schedule row — soft analogous hover */
+.schedule-artist-btn {
+  transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.schedule-artist-btn:hover:not(:disabled):not(.schedule-artist-btn-expanded) {
+  background: var(--hover-wash);
+  box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--teal) 35%, transparent);
+}
+
+.schedule-artist-btn-expanded,
+.schedule-artist-btn-expanded:hover {
+  background: var(--expand-wash);
+  box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--teal) 45%, transparent);
+}
+
+/* ── Track preview ────────────────────────────────────────────────── */
+
+.track-row {
+  transition: background 0.2s ease;
+}
+
+.track-row:hover {
+  background: color-mix(in srgb, var(--teal) 9%, var(--cream));
+}
+
+/* ── Stage color system ───────────────────────────────────────────── */
+
+.stage-pip {
+  width: 9px;
+  height: 9px;
+  border-radius: 35% 65% 70% 30% / 45% 40% 60% 55%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ── Match type badges ────────────────────────────────────────────── */
+
+.badge-direct {
+  border-radius: 0.2rem 0.65rem 0.35rem 0.5rem;
+  background: var(--teal);
+  color: var(--cream);
+}
+
+.badge-related {
+  border-radius: 0.35rem 0.45rem 0.55rem 0.25rem;
+  background: color-mix(in srgb, var(--green) 85%, white);
+  color: var(--cream);
+}
+
+.badge-genre {
+  border-radius: 0.4rem 0.3rem 0.5rem 0.45rem;
+  background: var(--cyan-dim);
+  color: var(--cream);
+}
+
+/* ── Horizontal rule ──────────────────────────────────────────────── */
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Pulse animation for now playing ──────────────────────────────── */
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.now-playing-pulse {
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* ── Playing bars ─────────────────────────────────────────────────── */
+
+@keyframes eq-bar {
+  0%, 100% { height: 4px; }
+  50% { height: 14px; }
+}
+
+.eq-bar {
+  width: 2px;
+  background: var(--cream);
+  animation: eq-bar 0.8s ease infinite;
+}
+
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Loader ───────────────────────────────────────────────────────── */
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loader-ring {
+  border: 2px solid var(--surface-light);
+  border-top-color: var(--teal);
+  animation: spin-slow 0.9s linear infinite;
+}
+
+/* ── Focus styles ─────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+/* ── Coachella gradient utility ───────────────────────────────────── */
+
+.coachella-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--cream) 0%,
+    var(--green) 35%,
+    var(--teal) 70%,
+    #0a2a32 100%
+  );
+}
+
+.coachella-gradient-text {
+  background: linear-gradient(
+    135deg,
+    var(--teal) 0%,
+    var(--green) 55%,
+    color-mix(in srgb, var(--teal) 70%, var(--green)) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
