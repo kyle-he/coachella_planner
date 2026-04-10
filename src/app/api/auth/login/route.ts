@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getCanonicalAppOrigin,
   getAppUrl,
   getAuthUrl,
   getSpotifyRedirectUri,
@@ -22,15 +21,7 @@ function htmlRedirect(target: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const appOrigin = getCanonicalAppOrigin(request);
-
-    if (request.nextUrl.origin !== appOrigin) {
-      return NextResponse.redirect(
-        new URL(`${request.nextUrl.pathname}${request.nextUrl.search}`, appOrigin)
-      );
-    }
-
-    const redirectUri = getSpotifyRedirectUri(appOrigin);
+    const redirectUri = getSpotifyRedirectUri(request.nextUrl.origin);
     const state = createSpotifyOauthState();
     const response = htmlRedirect(getAuthUrl(redirectUri, state));
     clearSpotifySessionCookies(response);

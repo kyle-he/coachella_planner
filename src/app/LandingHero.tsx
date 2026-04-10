@@ -2,7 +2,7 @@ import Image from "next/image";
 
 const TITLE = "Plan an awesome Coachella with your listening history";
 
-export function LandingHero() {
+export function LandingHero({ authHref }: { authHref: string }) {
   return (
     <div className="grain-strong relative z-10 px-8 pt-16 pb-24 sm:px-12 sm:pt-24 sm:pb-32 lg:px-16">
       <div className="mx-auto flex w-fit max-w-full flex-col items-center gap-8 sm:flex-row sm:items-start sm:justify-center sm:gap-10 lg:gap-14">
@@ -21,7 +21,7 @@ export function LandingHero() {
             {TITLE}
           </h1>
           <a
-            href="/api/auth/logout?next=/api/auth/login"
+            href={authHref}
             className="mt-10 scratch-pill group inline-flex items-center gap-3 px-7 py-3.5 bg-accent text-on-accent text-sm font-semibold tracking-wide transition-colors hover:bg-[var(--accent-hover-soft)] active:scale-[0.98] shadow-[3px_3px_0_color-mix(in_srgb,var(--teal)_28%,transparent)]"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">

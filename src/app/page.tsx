@@ -4,6 +4,21 @@ import { AuthErrorBanner } from "./AuthErrorBanner";
 import { AuthSessionReset } from "./AuthSessionReset";
 
 export default function Home() {
+  const authOrigin = (() => {
+    const redirectUri = process.env.SPOTIFY_REDIRECT_URI?.trim();
+    if (!redirectUri) return "";
+
+    try {
+      return new URL(redirectUri).origin;
+    } catch {
+      return "";
+    }
+  })();
+
+  const authHref = authOrigin
+    ? `${authOrigin}/api/auth/logout?next=/api/auth/login`
+    : "/api/auth/logout?next=/api/auth/login";
+
   return (
     <main className="min-h-screen relative overflow-hidden">
       <div className="noise-overlay" aria-hidden />
@@ -13,7 +28,7 @@ export default function Home() {
         <AuthErrorBanner />
       </Suspense>
 
-      <LandingHero />
+      <LandingHero authHref={authHref} />
 
       {/* Stats strip */}
       <div className="grain-strong relative z-10 border-t border-dashed border-border/70 px-8 sm:px-12 lg:px-16">

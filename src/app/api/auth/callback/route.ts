@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getAppUrl,
   SpotifyScopeError,
-  getCurrentUserProfile,
   getSpotifyRedirectUri,
   getTokens,
   getCanonicalAppOrigin,
@@ -16,6 +15,15 @@ import {
   hasRequiredSpotifyScopes,
   verifySpotifyOauthState,
 } from "@/lib/spotify-session";
+
+function htmlRedirect(target: string) {
+  const escaped = JSON.stringify(target);
+  const html = `<!DOCTYPE html><html><head><meta charSet="utf-8" /><title>Redirecting…</title></head><body><script>window.location.replace(${escaped});</script><noscript><meta http-equiv="refresh" content="0;url=${target}"></noscript>Redirecting…</body></html>`;
+  return new NextResponse(html, {
+    status: 200,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
 
 export async function GET(request: NextRequest) {
   const redirectWithError = (code: string) => {
@@ -49,33 +57,13 @@ export async function GET(request: NextRequest) {
       return redirectWithError("insufficient_scope");
     }
 
-    let profile: string | null = null;
-    try {
-      const full = await getCurrentUserProfile(tokens.access_token);
-      const displayName = full.display_name || full.id;
-      if (displayName) {
-        profile = JSON.stringify({
-          display_name: displayName,
-          images: (full.images || []).slice(0, 2),
-        });
-      }
-    } catch (e) {
-      console.warn("Failed to fetch profile at login:", e);
-    }
-
     // Generate a unique session ID so the client can detect re-logins
     // and invalidate stale caches (localStorage, etc.).
     const sessionId = createSpotifySessionId();
 
-    // Return a 200 HTML page that sets cookies via response headers, then
-    // redirects client-side. Browsers often silently drop Set-Cookie on
-    // 3xx redirects, which causes the session to be lost.
-    const html = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/schedule"></head><body>Redirecting…</body></html>`;
-
-    const response = new NextResponse(html, {
-      status: 200,
-      headers: { "Content-Type": "text/html" },
-    });
+    // Keep the callback minimal: exchange tokens, set cookies, and move the
+    // browser forward. Profile hydration can happen lazily via /api/me.
+    const response = htmlRedirect("/schedule");
 
     clearSpotifySessionCookies(response);
     clearSpotifyOauthStateCookie(response);
@@ -84,7 +72,7 @@ export async function GET(request: NextRequest) {
       refreshToken: tokens.refresh_token,
       expiresAt: Date.now() + tokens.expires_in * 1000,
       scope: grantedScope,
-      profile,
+      profile: null,
       sessionId,
     });
 
