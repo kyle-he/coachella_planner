@@ -6,13 +6,8 @@ import { useState, useEffect, useCallback, useRef, use } from "react";
 import { PartyScheduleToggle } from "@/app/PartyScheduleToggle";
 import {
   getShowPopularSongs,
-  getShowLastfmRecommendations,
   setShowPopularSongsPreference,
-  setShowLastfmRecommendationsPreference,
 } from "@/lib/schedule-preferences";
-
-/** When true, Last.fm connect UI is greyed out as (TBD); handlers and API code stay for later. */
-const LASTFM_CONNECTION_UI_DISABLED = true;
 
 interface PartyMember {
   email: string;
@@ -39,11 +34,6 @@ export default function ProfilePage({
   use(searchParams);
 
   const { data: session, status } = useSession();
-  const [lastfmUser, setLastfmUser] = useState<string | null>(null);
-  const [lastfmInput, setLastfmInput] = useState("");
-  const [connecting, setConnecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
 
   const [parties, setParties] = useState<Party[]>([]);
   const [schedulePartyVisible, setSchedulePartyVisible] = useState<
@@ -72,12 +62,9 @@ export default function ProfilePage({
   const preEditRef = useRef<{ name: string; image: string } | null>(null);
 
   const [showPopularSongs, setShowPopularSongs] = useState(true);
-  const [showLastfmRecommendations, setShowLastfmRecommendations] =
-    useState(true);
 
   useEffect(() => {
     setShowPopularSongs(getShowPopularSongs());
-    setShowLastfmRecommendations(getShowLastfmRecommendations());
   }, []);
 
   // Hydrate prefs from Firestore once authenticated; keeps multiple devices in sync.
@@ -89,15 +76,10 @@ export default function ProfilePage({
         if (!res.ok) return;
         const data = (await res.json()) as {
           showPopularSongs?: boolean | null;
-          showLastfmRecommendations?: boolean | null;
         };
         if (typeof data.showPopularSongs === "boolean") {
           setShowPopularSongs(data.showPopularSongs);
           setShowPopularSongsPreference(data.showPopularSongs);
-        }
-        if (typeof data.showLastfmRecommendations === "boolean") {
-          setShowLastfmRecommendations(data.showLastfmRecommendations);
-          setShowLastfmRecommendationsPreference(data.showLastfmRecommendations);
         }
       } catch { /* offline */ }
     })();
@@ -117,19 +99,6 @@ export default function ProfilePage({
     setPartyCodeInput(code.toUpperCase());
     setShowJoinForm(true);
     setShowCreateForm(false);
-  }, []);
-
-  // Check if Last.fm is connected by probing the cookie via /api/me
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/me");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.lastfmUser) setLastfmUser(data.lastfmUser);
-        }
-      } catch { /* ignore */ }
-    })();
   }, []);
 
   useEffect(() => {
@@ -157,34 +126,6 @@ export default function ProfilePage({
         // ignore
       }
     })();
-  }, []);
-
-  const connectLastfm = useCallback(async (username: string) => {
-    setConnecting(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(data.error || "Could not find that username.");
-        return;
-      }
-      setLastfmUser(username);
-      setShowForm(false);
-      setLastfmInput("");
-      // Clear schedule cache so it re-fetches with Last.fm data
-      try {
-        window.localStorage.removeItem("coachella:schedule:v4");
-      } catch { /* ignore */ }
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setConnecting(false);
-    }
   }, []);
 
   // Load parties
@@ -330,17 +271,9 @@ export default function ProfilePage({
     []
   );
 
-  const disconnectLastfm = useCallback(async () => {
-    await fetch("/api/auth/logout?next=/profile").catch(() => {});
-    setLastfmUser(null);
-    try {
-      window.localStorage.removeItem("coachella:schedule:v4");
-    } catch { /* ignore */ }
-  }, []);
-
   /** Fire-and-forget sync of a preference change to Firestore. */
   const syncPrefToDb = useCallback(
-    (prefs: { showPopularSongs?: boolean; showLastfmRecommendations?: boolean }) => {
+    (prefs: { showPopularSongs?: boolean }) => {
       if (status !== "authenticated") return;
       fetch("/api/prefs", {
         method: "POST",
@@ -687,14 +620,8 @@ export default function ProfilePage({
               <span className="text-[12px] font-medium text-cyan">Connected</span>
             </div>
 
-            {/* Last.fm — full flow kept behind LASTFM_CONNECTION_UI_DISABLED */}
-            <div
-              className={`rounded-lg border border-border/40 bg-[var(--hover-wash)] px-4 py-3 ${
-                LASTFM_CONNECTION_UI_DISABLED
-                  ? "opacity-45 pointer-events-none select-none"
-                  : ""
-              }`}
-            >
+            {/* Last.fm — coming soon */}
+            <div className="rounded-lg border border-border/40 bg-[var(--hover-wash)] px-4 py-3 opacity-45 pointer-events-none select-none">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <svg className="h-5 w-5 shrink-0 text-[#d51007]" viewBox="0 0 24 24" fill="currentColor">
@@ -702,67 +629,11 @@ export default function ProfilePage({
                   </svg>
                   <div>
                     <p className="text-[14px] font-medium text-foreground">Last.fm</p>
-                    {lastfmUser ? (
-                      <p className="text-[12px] text-muted">{lastfmUser}</p>
-                    ) : (
-                      <p className="text-[12px] text-muted">
-                        Connect for personalized reccs
-                      </p>
-                    )}
+                    <p className="text-[12px] text-muted">Coming soon</p>
                   </div>
                 </div>
-                {LASTFM_CONNECTION_UI_DISABLED ? (
-                  <span className="text-[12px] font-medium text-muted">(TBD)</span>
-                ) : lastfmUser ? (
-                  <button
-                    type="button"
-                    onClick={disconnectLastfm}
-                    className="text-[12px] font-medium text-muted/70 hover:text-foreground transition-colors"
-                  >
-                    Disconnect
-                  </button>
-                ) : !showForm ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(true)}
-                    className="scratch-pill px-3 py-1 text-[12px] font-medium bg-accent text-on-accent hover:bg-[var(--accent-hover-soft)] transition-colors"
-                  >
-                    Connect
-                  </button>
-                ) : null}
+                <span className="text-[12px] font-medium text-muted">(TBD)</span>
               </div>
-
-              {showForm && !lastfmUser && !LASTFM_CONNECTION_UI_DISABLED && (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <input
-                    type="text"
-                    value={lastfmInput}
-                    onChange={(e) => { setLastfmInput(e.target.value); setError(null); }}
-                    placeholder="Last.fm username"
-                    disabled={connecting}
-                    autoFocus
-                    className="min-w-0 flex-1 px-3 py-1.5 bg-background border border-border/50 rounded text-foreground text-[13px] placeholder:text-muted/50 focus:outline-none focus:border-accent/60 disabled:opacity-50"
-                  />
-                  <button
-                    type="button"
-                    disabled={connecting || !lastfmInput.trim()}
-                    onClick={() => connectLastfm(lastfmInput.trim())}
-                    className="scratch-pill px-3 py-1.5 text-[12px] font-medium bg-accent text-on-accent hover:bg-[var(--accent-hover-soft)] disabled:opacity-50"
-                  >
-                    {connecting ? "Connecting…" : "Connect"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowForm(false); setError(null); setLastfmInput(""); }}
-                    className="text-[12px] text-muted/70 hover:text-foreground transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  {error && (
-                    <span className="w-full text-[12px] text-red-400 mt-1">{error}</span>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </section>
@@ -773,18 +644,6 @@ export default function ProfilePage({
             Preferences
           </h2>
           <div className="mt-4 space-y-3 rounded-lg border border-border/40 bg-[var(--hover-wash)] px-4 py-3">
-            {!LASTFM_CONNECTION_UI_DISABLED && lastfmUser ? (
-              <PartyScheduleToggle
-                id="pref-show-lastfm-recs"
-                label="Show Last.fm recommendations"
-                checked={showLastfmRecommendations}
-                onChange={(next) => {
-                  setShowLastfmRecommendations(next);
-                  setShowLastfmRecommendationsPreference(next);
-                  syncPrefToDb({ showLastfmRecommendations: next });
-                }}
-              />
-            ) : null}
             <PartyScheduleToggle
               id="pref-show-popular"
               label="Show popular songs"

@@ -35,8 +35,6 @@ export interface ScheduleGridArtist {
     day: string;
     artist: { name: string };
   };
-  matchType: "direct" | "genre" | "related" | "none";
-  mightLike?: boolean;
 }
 
 export interface PartyMemberBrief {
@@ -65,8 +63,6 @@ interface ScheduleGridViewProps {
   editable?: boolean;
   /** Called when a cell's plan membership should toggle */
   onTogglePlan?: (rowKey: string, currentlyInPlan: boolean) => void;
-  /** When false, “For you” styling and chips are hidden (profile preference). */
-  showLastfmBadges?: boolean;
 }
 
 /** Narrow rail: compact “7PM” labels read larger than old “7:00 PM” strings */
@@ -85,7 +81,6 @@ export function ScheduleGridView({
   fillViewport = false,
   editable = false,
   onTogglePlan,
-  showLastfmBadges = true,
 }: ScheduleGridViewProps) {
   const handleCellClick = useCallback(
     (rowKey: string) => {
@@ -278,9 +273,6 @@ export function ScheduleGridView({
                   const rowKey = item.rowKey;
                   const stageColor = stageColors[rec.setTime.stage] || "#888888";
                   const isOn = expandedKey === rowKey;
-                  const matched =
-                    showLastfmBadges &&
-                    (rec.mightLike ?? rec.matchType !== "none");
                   const inPlan = item.inPlan === true;
 
                   return (
@@ -343,18 +335,11 @@ export function ScheduleGridView({
                           className={`line-clamp-3 min-w-0 text-[12px] leading-snug sm:text-xs ${
                             inPlan
                               ? "font-semibold text-[var(--cream)]"
-                              : matched
-                                ? "font-semibold text-foreground"
-                                : "font-semibold text-muted"
+                              : "font-semibold text-muted"
                           }`}
                         >
                           {rec.setTime.artist.name}
                         </span>
-                        {matched && !inPlan && (
-                          <span className="rounded bg-[color-mix(in_srgb,var(--teal)_12%,transparent)] px-1 py-px text-[9px] font-semibold uppercase leading-none text-cyan">
-                            For you
-                          </span>
-                        )}
                       </div>
                       <div className="mt-auto flex flex-col gap-1.5 px-2 pb-1.5">
                         {item.partyMembers && item.partyMembers.length > 0 && (
