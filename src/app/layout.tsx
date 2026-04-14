@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Providers } from "./Providers";
 import "./globals.css";
 
 const funnelSans = localFont({
@@ -40,7 +41,7 @@ export default function RootLayout({
       className={`${funnelSans.variable} ${funnelDisplay.variable} ${perfectlyNineties.variable} h-full`}
     >
       <body className={`${funnelSans.className} min-h-full flex flex-col`}>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

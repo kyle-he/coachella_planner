@@ -1,92 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getTopArtists,
-  getTopTracks,
-  getRecentlyPlayed,
-  getSavedTracks,
-  getFollowedArtists,
-  refreshAccessToken,
-  SpotifyForbiddenError,
-  SpotifyScopeError,
-  SpotifyUnauthorizedError,
-} from "@/lib/spotify";
-import {
-  SPOTIFY_COOKIE_OPTS,
-  clearSpotifySessionCookies,
-  getSpotifySessionIssue,
-  readSpotifySession,
-} from "@/lib/spotify-session";
+  getUserTopArtists,
+  getUserTopTracks,
+  LastfmError,
+} from "@/lib/lastfm";
+import { readLastfmSession } from "@/lib/lastfm-session";
 import {
   searchArtist as deezerSearch,
   getArtistTopTracks as deezerTopTracks,
-  getRelatedArtists as deezerRelated,
   type DeezerArtist,
   type DeezerTrack,
 } from "@/lib/deezer";
 import { SCHEDULE, type SetTime, type Stage } from "@/lib/coachella-data";
+import { enrichDeezerArtistFromLineup } from "@/lib/coachella-lineup";
 import { getWalkingTime } from "@/lib/stage-proximity";
 
-// ── Auth helpers (Spotify only — for user listening data) ────────────
-
-async function getValidToken(request: NextRequest) {
-  const session = readSpotifySession(request);
-  if (!session) return null;
-
-  if (session.expiresAt && Date.now() < session.expiresAt - 60000) {
-    return {
-      accessToken: session.accessToken,
-      refreshed: false,
-      refreshToken: session.refreshToken,
-      expiresAt: session.expiresAt,
-      scope: session.scope,
-    };
-  }
-  try {
-    const newTokens = await refreshAccessToken(session.refreshToken);
-    return {
-      accessToken: newTokens.access_token as string,
-      refreshed: true,
-      refreshToken: (newTokens.refresh_token as string) || session.refreshToken,
-      expiresAt: Date.now() + newTokens.expires_in * 1000,
-      scope: newTokens.scope || session.scope,
-    };
-  } catch {
-    return null;
-  }
-}
-
 // ── Types ────────────────────────────────────────────────────────────
-
-interface SpotifyArtist {
-  id: string;
-  name: string;
-  genres: string[];
-  popularity?: number;
-}
-
-interface SpotifyTrack {
-  id: string;
-  name: string;
-  preview_url: string | null;
-  duration_ms: number;
-  external_urls?: { spotify?: string };
-  album?: {
-    name?: string;
-    images?: { url: string; height?: number; width?: number }[];
-  };
-  artists: { id: string; name: string }[];
-}
 
 // What we return to the frontend
 export interface TrackInfo {
   id: string | number;
   title: string;
-  preview: string; // 30s mp3 (Deezer) or Spotify preview_url
+  preview: string; // 30s mp3 (Deezer)
   duration: number; // seconds
   albumTitle: string;
   albumCover: string;
-  link: string; // deezer or spotify track link
-  source?: "deezer" | "spotify";
+  link: string; // deezer track link
+  source?: "deezer";
   isUserTopTrack?: boolean;
 }
 
@@ -96,17 +36,17 @@ export interface ArtistRecommendation {
     name: string;
     image: string;
     link: string;
-    fans: number;
     deezerId: number;
   } | null;
   affinityScore: number;
   affinityReason: string;
   topTracks: TrackInfo[];
-  userTopTracks?: TrackInfo[];
   userTopTrackNames?: string[];
   matchType: "direct" | "genre" | "related" | "none";
   relatedTo?: string;
   genreOverlap?: string[];
+  /** True when this lineup act is likely a good match for the user (show “For you” badge). */
+  mightLike?: boolean;
 }
 
 export interface ScheduleSlot {
@@ -136,8 +76,6 @@ function normalizeArtistName(name: string): string {
 /**
  * Split collab artist names on common separators (x, &, feat, ft, vs, with, and)
  * Returns all individual artist name variants (normalized).
- * e.g. "Chloe Caillet x Rossi." → ["chloe caillet x rossi", "chloe caillet", "rossi"]
- * e.g. "Green Velvet x AYYBO"  → ["green velvet x ayybo", "green velvet", "ayybo"]
  */
 function splitCollabNames(name: string): string[] {
   const normalized = normalizeArtistName(name);
@@ -146,7 +84,6 @@ function splitCollabNames(name: string): string[] {
     .map(normalizeArtistName)
     .filter((p) => p.length > 0);
 
-  // Always include the full normalized name, then individual parts
   const result = [normalized];
   if (parts.length > 1) {
     for (const p of parts) {
@@ -183,142 +120,157 @@ function deezerTrackToInfo(t: DeezerTrack): TrackInfo {
   };
 }
 
-function spotifyTrackToInfo(t: SpotifyTrack): TrackInfo | null {
-  if (!t.preview_url) return null;
-  const cover =
-    t.album?.images?.[1]?.url ||
-    t.album?.images?.[0]?.url ||
-    t.album?.images?.[2]?.url ||
-    "";
-  return {
-    id: t.id,
-    title: t.name,
-    preview: t.preview_url,
-    duration: Math.max(1, Math.round(t.duration_ms / 1000)),
-    albumTitle: t.album?.name || "Spotify",
-    albumCover: cover,
-    link: t.external_urls?.spotify || "",
-    source: "spotify",
-    isUserTopTrack: true,
-  };
-}
-
 // ── Main handler ─────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
-  const sessionIssue = getSpotifySessionIssue(request);
-  if (sessionIssue) {
-    const response = NextResponse.json(
-      { error: "Reauthentication required", code: sessionIssue },
-      { status: 401 }
-    );
-    clearSpotifySessionCookies(response);
-    return response;
-  }
+  const username = readLastfmSession(request);
 
-  const result = await getValidToken(request);
-  if (!result) {
-    const response = NextResponse.json(
-      { error: "Not authenticated" },
-      { status: 401 }
-    );
-    clearSpotifySessionCookies(response);
-    return response;
-  }
+  // No Last.fm connected: return all lineup artists with Deezer data but no scoring
+  if (!username) {
+    try {
+      const searchNames = SCHEDULE.map((st) => ({
+        setTime: st,
+        searchName: st.artist.spotifyName || st.artist.name,
+        normalized: normalizeArtistName(st.artist.spotifyName || st.artist.name),
+      }));
 
-  const session = {
-    accessToken: result.accessToken,
-    refreshToken: result.refreshToken,
-    refreshed: result.refreshed,
-    expiresAt: result.expiresAt,
-    scope: result.scope,
-  };
+      const deezerResults: {
+        setTime: SetTime;
+        artist: DeezerArtist | null;
+      }[] = [];
+
+      const BATCH = 12;
+      for (let i = 0; i < searchNames.length; i += BATCH) {
+        const batch = searchNames.slice(i, i + BATCH);
+        const results = await Promise.all(
+          batch.map(async ({ setTime, searchName, normalized }) => {
+            try {
+              const res = await deezerSearch(searchName, 5);
+              const artists = res.data || [];
+              const exact = artists.find(
+                (a) => normalizeArtistName(a.name) === normalized
+              );
+              return { setTime, artist: exact || artists[0] || null };
+            } catch {
+              return { setTime, artist: null };
+            }
+          })
+        );
+        deezerResults.push(...results);
+        if (i + BATCH < searchNames.length) {
+          await new Promise((r) => setTimeout(r, 35));
+        }
+      }
+
+      const trackMap = new Map<number, TrackInfo[]>();
+      const withArtist = deezerResults.filter((r) => r.artist);
+      for (let i = 0; i < withArtist.length; i += BATCH) {
+        const batch = withArtist.slice(i, i + BATCH);
+        const results = await Promise.all(
+          batch.map(async (r) => {
+            try {
+              const data = await deezerTopTracks(r.artist!.id, 5);
+              return {
+                id: r.artist!.id,
+                tracks: (data.data || []).slice(0, 5).map(deezerTrackToInfo),
+              };
+            } catch {
+              return { id: r.artist!.id, tracks: [] as TrackInfo[] };
+            }
+          })
+        );
+        for (const r of results) {
+          if (r.tracks.length > 0) trackMap.set(r.id, r.tracks);
+        }
+        if (i + BATCH < withArtist.length) {
+          await new Promise((r) => setTimeout(r, 35));
+        }
+      }
+
+      const bareRecs: ArtistRecommendation[] = deezerResults.map((r) => ({
+        setTime: r.setTime,
+        artist: r.artist
+          ? (() => {
+              const { image, link } = enrichDeezerArtistFromLineup(
+                r.setTime.artist,
+                r.artist
+              );
+              return {
+                name: r.artist.name,
+                image,
+                link,
+                deezerId: r.artist.id,
+              };
+            })()
+          : null,
+        affinityScore: 0,
+        affinityReason: "",
+        topTracks: r.artist ? (trackMap.get(r.artist.id) || []) : [],
+        matchType: "none" as const,
+        mightLike: false,
+      }));
+
+      return NextResponse.json({
+        recommendations: bareRecs,
+        optimizedSchedule: [],
+        totalMatched: 0,
+        totalDiscovery: 0,
+        totalArtists: bareRecs.length,
+      });
+    } catch (e) {
+      console.error("[recommendations] bare enrichment error:", e);
+      const bareRecs: ArtistRecommendation[] = SCHEDULE.map((setTime) => ({
+        setTime,
+        artist: null,
+        affinityScore: 0,
+        affinityReason: "",
+        topTracks: [],
+        matchType: "none" as const,
+      }));
+      return NextResponse.json({
+        recommendations: bareRecs,
+        optimizedSchedule: [],
+        totalMatched: 0,
+        totalDiscovery: 0,
+        totalArtists: bareRecs.length,
+      });
+    }
+  }
 
   try {
     const t0 = Date.now();
-    const log = (msg: string) => console.log(`[recs +${Date.now() - t0}ms] ${msg}`);
+    const log = (msg: string) =>
+      console.log(`[recs +${Date.now() - t0}ms] ${msg}`);
 
-    // ── Phase 1: Gather user taste from Spotify ──────────────────────
-    log("Phase 1: Fetching Spotify listening data…");
-    const fetchListeningData = (token: string) =>
-      Promise.all([
-        getTopArtists(token, "short_term", 50),
-        getTopArtists(token, "medium_term", 50),
-        getTopArtists(token, "long_term", 50),
-        getTopTracks(token, "short_term", 50),
-        getTopTracks(token, "medium_term", 50),
-        getTopTracks(token, "long_term", 50),
-        getRecentlyPlayed(token, 50),
-        getSavedTracks(token, 50, 0),
-        getFollowedArtists(token, 50),
-      ]);
+    // ── Last.fm: only overall top artists + top tracks (2 API calls) ─
+    log("Last.fm: overall artists + top tracks…");
+    const [topOverall, topTracks] = await Promise.all([
+      getUserTopArtists(username, "overall", 35),
+      getUserTopTracks(username, "overall", 30),
+    ]);
 
-    let pack: Awaited<ReturnType<typeof fetchListeningData>>;
-    try {
-      pack = await fetchListeningData(session.accessToken);
-    } catch (e) {
-      if (e instanceof SpotifyUnauthorizedError) {
-        const newTokens = await refreshAccessToken(session.refreshToken);
-        session.accessToken = newTokens.access_token as string;
-        session.refreshToken =
-          (newTokens.refresh_token as string) || session.refreshToken;
-        session.expiresAt = Date.now() + (newTokens.expires_in as number) * 1000;
-        session.scope = newTokens.scope || session.scope;
-        session.refreshed = true;
-        log("Phase 1: Refreshed access token after 401, retrying…");
-        pack = await fetchListeningData(session.accessToken);
-      } else {
-        throw e;
-      }
-    }
-
-    const [
-      topShort,
-      topMedium,
-      topLong,
-      tracksShort,
-      tracksMedium,
-      tracksLong,
-      recentlyPlayed,
-      savedTracks,
-      followed,
-    ] = pack;
-
-    const topArtistSlots =
-      (topShort.items?.length ?? 0) +
-      (topMedium.items?.length ?? 0) +
-      (topLong.items?.length ?? 0);
-    const topTrackSlots =
-      (tracksShort.items?.length ?? 0) +
-      (tracksMedium.items?.length ?? 0) +
-      (tracksLong.items?.length ?? 0);
     log(
-      `Phase 1 done — ${topArtistSlots} top-artist slots, ${topTrackSlots} top-track slots; recent ${recentlyPlayed.items?.length ?? 0}, saved ${savedTracks.items?.length ?? 0}, followed ${followed.artists?.items?.length ?? 0}`
+      `Last.fm — ${topOverall.length} top artists, ${topTracks.length} top tracks`
     );
 
-    // ── Phase 2: Build direct affinity map from user's Spotify data ──
-    const affinityMap = new Map<
-      string,
-      { score: number; reason: string }
-    >();
-
-    const allUserArtists: SpotifyArtist[] = [];
+    const affinityMap = new Map<string, { score: number; reason: string }>();
 
     const processArtists = (
-      artists: SpotifyArtist[],
+      artists: { name: string }[],
       weight: number,
       label: string
     ) => {
       artists.forEach((artist, index) => {
-        allUserArtists.push(artist);
-        // Check all name variants (handles collabs like "Artist X Artist")
         const names = splitCollabNames(artist.name);
         const positionScore =
           ((artists.length - index) / artists.length) * weight;
         for (const normalized of names) {
           const existing = affinityMap.get(normalized);
           if (!existing || existing.score < positionScore) {
-            affinityMap.set(normalized, { score: positionScore, reason: label });
+            affinityMap.set(normalized, {
+              score: positionScore,
+              reason: label,
+            });
           } else {
             existing.score += positionScore * 0.5;
           }
@@ -326,66 +278,30 @@ export async function GET(request: NextRequest) {
       });
     };
 
-    processArtists((topShort.items || []) as SpotifyArtist[], 100, "In your recent heavy rotation");
-    processArtists((topMedium.items || []) as SpotifyArtist[], 70, "You listen to them regularly");
-    processArtists((topLong.items || []) as SpotifyArtist[], 40, "A long-time favorite of yours");
-    processArtists((followed.artists?.items || []) as SpotifyArtist[], 55, "Artists you follow");
+    processArtists(topOverall, 72, "You listen to this artist");
 
-    // Extract artists from ALL top tracks (short + medium + long term)
     const trackArtistCounts = new Map<string, number>();
-    const userTopTracksByArtist = new Map<string, SpotifyTrack[]>();
-    [
-      ...((tracksShort.items || []) as SpotifyTrack[]),
-      ...((tracksMedium.items || []) as SpotifyTrack[]),
-      ...((tracksLong.items || []) as SpotifyTrack[]),
-    ].forEach((track: SpotifyTrack) => {
-      track.artists.forEach((a) => {
-        const names = splitCollabNames(a.name);
-        for (const normalized of names) {
-          trackArtistCounts.set(
-            normalized,
-            (trackArtistCounts.get(normalized) || 0) + 1
-          );
-          const existing = userTopTracksByArtist.get(normalized) || [];
-          existing.push(track);
-          userTopTracksByArtist.set(normalized, existing);
-        }
-      });
-    });
+    const userTopTrackNamesByArtist = new Map<string, string[]>();
 
-    // Extract artists from recently played
-    ((recentlyPlayed.items || []) as { track: SpotifyTrack }[]).forEach(
-      (item) => {
-        item.track.artists.forEach((a) => {
-          const names = splitCollabNames(a.name);
-          for (const normalized of names) {
-            trackArtistCounts.set(
-              normalized,
-              (trackArtistCounts.get(normalized) || 0) + 1
-            );
-          }
-        });
+    for (const track of topTracks) {
+      const artistName =
+        track.artist.name || track.artist["#text"] || "";
+      if (!artistName) continue;
+      const names = splitCollabNames(artistName);
+      for (const normalized of names) {
+        trackArtistCounts.set(
+          normalized,
+          (trackArtistCounts.get(normalized) || 0) + 1
+        );
+        const existing = userTopTrackNamesByArtist.get(normalized) || [];
+        existing.push(track.name);
+        userTopTrackNamesByArtist.set(normalized, existing);
       }
-    );
-
-    // Extract artists from saved/liked tracks
-    ((savedTracks.items || []) as { track: SpotifyTrack }[]).forEach(
-      (item) => {
-        item.track.artists.forEach((a) => {
-          const names = splitCollabNames(a.name);
-          for (const normalized of names) {
-            trackArtistCounts.set(
-              normalized,
-              (trackArtistCounts.get(normalized) || 0) + 1
-            );
-          }
-        });
-      }
-    );
+    }
 
     trackArtistCounts.forEach((count, key) => {
       const existing = affinityMap.get(key);
-      const trackScore = count * 10;
+      const trackScore = count * 12;
       if (existing) {
         existing.score += trackScore;
       } else {
@@ -396,40 +312,9 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // ── Phase 3: Build genre profile from Spotify data ───────────────
-    log(`Phase 2 done — ${affinityMap.size} artists in affinity map, ${trackArtistCounts.size} from tracks`);
-    const genreCounts = new Map<string, number>();
-    const deduped = new Map<string, SpotifyArtist>();
-    allUserArtists.forEach((a) => {
-      const n = normalizeArtistName(a.name);
-      if (!deduped.has(n)) deduped.set(n, a);
-    });
-    deduped.forEach((artist) => {
-      (artist.genres || []).forEach((g) => {
-        genreCounts.set(g, (genreCounts.get(g) || 0) + 1);
-      });
-    });
-    const maxGenreCount = Math.max(...genreCounts.values(), 1);
-    const genreProfile = new Map<string, number>();
-    genreCounts.forEach((count, genre) => {
-      genreProfile.set(genre, count / maxGenreCount);
-    });
+    log(`Affinity map — ${affinityMap.size} keys`);
 
-    // Build a set of genre words for fuzzy matching against artist names
-    // e.g. "indie pop" → ["indie", "pop"]
-    const genreWords = new Set<string>();
-    genreCounts.forEach((_count, genre) => {
-      genre
-        .toLowerCase()
-        .split(/\s+/)
-        .forEach((w) => {
-          if (w.length > 2) genreWords.add(w);
-        });
-    });
-
-    // ── Phase 4: Search ALL Coachella artists on Deezer ──────────────
-    log(`Phase 3 done — ${genreProfile.size} genres profiled`);
-    // (Parallel with Phase 5 start) — increased batch size for speed
+    // ── Deezer: resolve every lineup act (no related-artist expansion) ─
     interface DeezerMatch {
       setTime: SetTime;
       deezerArtist: DeezerArtist | null;
@@ -437,7 +322,6 @@ export async function GET(request: NextRequest) {
       collabNames: string[];
     }
 
-    // Pre-build the normalized name index for Coachella schedule
     const scheduleSearchNames = SCHEDULE.map((setTime) => {
       const searchName = setTime.artist.spotifyName || setTime.artist.name;
       return {
@@ -448,9 +332,8 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Batch Deezer searches — 8 concurrent for speed
     const deezerMatches: DeezerMatch[] = [];
-    const searchBatch = 8;
+    const searchBatch = 12;
     for (let i = 0; i < scheduleSearchNames.length; i += searchBatch) {
       const batch = scheduleSearchNames.slice(i, i + searchBatch);
       const results = await Promise.all(
@@ -458,17 +341,16 @@ export async function GET(request: NextRequest) {
           try {
             const result = await deezerSearch(searchName, 5);
             const artists = result.data || [];
-            // Try exact match first, then fall back to top result
             const exact = artists.find(
               (a) => normalizeArtistName(a.name) === normalized
             );
-            // If no exact match, also try matching each collab part
             let bestMatch = exact || null;
             if (!bestMatch && collabNames.length > 1) {
               for (const name of collabNames.slice(1)) {
                 bestMatch =
-                  artists.find((a) => normalizeArtistName(a.name) === name) ||
-                  null;
+                  artists.find(
+                    (a) => normalizeArtistName(a.name) === name
+                  ) || null;
                 if (bestMatch) break;
               }
             }
@@ -479,75 +361,26 @@ export async function GET(request: NextRequest) {
               collabNames,
             };
           } catch {
-            return { setTime, deezerArtist: null, normalized, collabNames };
+            return {
+              setTime,
+              deezerArtist: null,
+              normalized,
+              collabNames,
+            };
           }
         })
       );
       deezerMatches.push(...results);
       if (i + searchBatch < scheduleSearchNames.length) {
-        await new Promise((r) => setTimeout(r, 80));
+        await new Promise((r) => setTimeout(r, 25));
       }
     }
 
-    // ── Phase 5: Get related artists from Deezer ─────────────────────
-    log(`Phase 4 done — ${deezerMatches.filter(m => m.deezerArtist).length}/${deezerMatches.length} artists found on Deezer`);
-    // For the user's top Spotify artists, find them on Deezer, then
-    // fetch their related artists. This builds the "you'd like" map.
-    const relatedArtistMap = new Map<
-      string,
-      { score: number; relatedTo: string }
-    >();
+    log(
+      `Deezer lineup — ${deezerMatches.filter((m) => m.deezerArtist).length}/${deezerMatches.length} matched`
+    );
 
-    // Build a set of Coachella artist normalized names for fast lookups
-    const coachellaNameSet = new Set<string>();
-    for (const m of deezerMatches) {
-      coachellaNameSet.add(m.normalized);
-      for (const cn of m.collabNames) coachellaNameSet.add(cn);
-      if (m.deezerArtist) {
-        coachellaNameSet.add(normalizeArtistName(m.deezerArtist.name));
-      }
-    }
-
-    // Use all deduplicated user artists (up to 60) for wider related net
-    const userTopNames = [...deduped.values()].slice(0, 60);
-    const relBatch = 8;
-    for (let i = 0; i < userTopNames.length; i += relBatch) {
-      const batch = userTopNames.slice(i, i + relBatch);
-      const results = await Promise.all(
-        batch.map(async (spArtist) => {
-          try {
-            // Search Deezer for this user's artist
-            const searchRes = await deezerSearch(spArtist.name, 3);
-            const dzArtist = searchRes.data?.[0];
-            if (!dzArtist) return [];
-            // Get related artists from Deezer
-            const relRes = await deezerRelated(dzArtist.id, 25);
-            return (relRes.data || []).map((rel, idx) => ({
-              normalized: normalizeArtistName(rel.name),
-              score: ((25 - idx) / 25) * 50,
-              relatedTo: spArtist.name,
-            }));
-          } catch {
-            return [];
-          }
-        })
-      );
-      results.flat().forEach(({ normalized, score, relatedTo }) => {
-        if (affinityMap.has(normalized)) return;
-        const existing = relatedArtistMap.get(normalized);
-        if (!existing || existing.score < score) {
-          relatedArtistMap.set(normalized, { score, relatedTo });
-        } else {
-          existing.score = Math.min(existing.score + score * 0.4, 70);
-        }
-      });
-      if (i + relBatch < userTopNames.length) {
-        await new Promise((r) => setTimeout(r, 100));
-      }
-    }
-
-    // ── Phase 6: Score each Coachella artist ─────────────────────────
-    log(`Phase 5 done — ${relatedArtistMap.size} related-artist mappings from ${userTopNames.length} user artists`);
+    // ── Score lineup vs taste (direct + optional popularity hint only) ─
     interface ScoredArtist {
       setTime: SetTime;
       deezerArtist: DeezerArtist | null;
@@ -563,27 +396,23 @@ export async function GET(request: NextRequest) {
       let affinityScore = 0;
       let affinityReason = "Not in your listening history";
       let matchType: ArtistRecommendation["matchType"] = "none";
-      let relatedTo: string | undefined;
-      let genreOverlap: string[] | undefined;
+      const relatedTo: string | undefined = undefined;
+      const genreOverlap: string[] | undefined = undefined;
 
-      // Also check the deezer match name in case it differs slightly
       const deezerNorm = deezerArtist
         ? normalizeArtistName(deezerArtist.name)
         : "";
 
-      // Build all name variants to check
       const allNames = [...collabNames];
       if (deezerNorm && !allNames.includes(deezerNorm)) {
         allNames.push(deezerNorm);
       }
-      // Also split the Deezer name for collabs
       if (deezerArtist) {
         for (const cn of splitCollabNames(deezerArtist.name)) {
           if (!allNames.includes(cn)) allNames.push(cn);
         }
       }
 
-      // Direct match? Check all name variants against the affinity map
       for (const name of allNames) {
         const direct = affinityMap.get(name);
         if (direct) {
@@ -595,82 +424,18 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Related artist match?
-      if (matchType !== "direct") {
-        for (const name of allNames) {
-          const rel = relatedArtistMap.get(name);
-          if (rel && rel.score > affinityScore) {
-            affinityScore = rel.score;
-            affinityReason = `Similar to ${rel.relatedTo}`;
-            matchType = "related";
-            relatedTo = rel.relatedTo;
-          }
-        }
-      }
-
-      // Genre match — use the user's genre profile to find genre overlap
-      // Deezer doesn't provide genres per artist, but we can use the
-      // Spotify search data to cross-reference. For now, check if any
-      // of the user's top genres appear as words in the artist name or
-      // the Deezer tracklist metadata. This is a lightweight heuristic.
-      if (matchType === "none" && deezerArtist) {
-        // Search all user artists' genres for any that match Coachella
-        // artist names or known associations. We check the artist name
-        // words against genre words as a proxy.
-        const artistNameWords = new Set(
-          (deezerArtist.name || "")
-            .toLowerCase()
-            .split(/[^a-z0-9]+/)
-            .filter((w) => w.length > 2)
-        );
-        const matchedGenres: string[] = [];
-        genreProfile.forEach((weight, genre) => {
-          if (weight < 0.15) return; // skip very weak genres
-          const gWords = genre.toLowerCase().split(/\s+/);
-          for (const gw of gWords) {
-            if (gw.length > 2 && artistNameWords.has(gw)) {
-              matchedGenres.push(genre);
-              break;
-            }
-          }
-        });
-
-        // Also: check if the Deezer artist is in any genre-tagged
-        // Spotify artist's related network that we haven't checked
-        // (this is the "genre proximity" heuristic)
-        if (matchedGenres.length > 0) {
-          const genreScore = matchedGenres.reduce((sum, g) => {
-            return sum + (genreProfile.get(g) || 0) * 20;
-          }, 0);
-          affinityScore = Math.min(genreScore, 30);
-          affinityReason = `Matches your taste in ${matchedGenres.slice(0, 3).join(", ")}`;
-          matchType = "genre";
-          genreOverlap = matchedGenres;
-        }
-      }
-
-      // Popularity boost — if the artist has lots of fans on Deezer,
-      // give a small bonus to help surface popular acts you might enjoy.
-      // This acts as a tiebreaker and makes the schedule "cooler".
       if (deezerArtist && deezerArtist.nb_fan > 0) {
-        // Log-scale fan bonus: 1M fans → ~6 points, 10M → ~8, 100K → ~4
         const fanBonus = Math.min(
           8,
           Math.log10(Math.max(deezerArtist.nb_fan, 1)) * 1.2
         );
         if (matchType === "direct") {
-          // Small boost for popular matched artists
-          affinityScore += fanBonus * 0.3;
-        } else if (matchType === "related") {
-          // Medium boost for popular related artists
-          affinityScore += fanBonus * 0.5;
+          affinityScore += fanBonus * 0.35;
         } else if (matchType === "none" && deezerArtist.nb_fan > 500000) {
-          // For unmatched but very popular artists, give a base discovery score
-          // This surfaces headliners and popular acts the user might enjoy
-          affinityScore = Math.max(affinityScore, fanBonus * 1.5);
-          if (affinityScore > 0 && matchType === "none") {
-            affinityReason = "Popular artist you might enjoy";
-            matchType = "genre"; // treat as genre-level discovery
+          affinityScore = Math.max(affinityScore, fanBonus * 1.4);
+          if (affinityScore > 0) {
+            affinityReason = "Popular — you might enjoy";
+            matchType = "genre";
           }
         }
       }
@@ -686,26 +451,27 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // ── Phase 7: Fetch top tracks from Deezer ────────────────────────
-    log(`Phase 6 done — scored ${scored.length} artists (${scored.filter(s => s.matchType === 'direct').length} direct, ${scored.filter(s => s.matchType === 'related').length} related, ${scored.filter(s => s.matchType === 'genre').length} genre)`);
-    // Deezer always returns preview URLs! No more empty tracks.
+    log(
+      `Scored — ${scored.filter((s) => s.matchType === "direct").length} direct, ${scored.filter((s) => s.matchType === "genre").length} discovery`
+    );
+
+    // ── Deezer top tracks (batched previews) ─────────────────────────
     const trackMap = new Map<number, TrackInfo[]>();
 
-    // Prioritize artists with scores, but fetch for ALL that have a Deezer ID
     const withDeezer = scored
       .filter((s) => s.deezerArtist)
       .sort((a, b) => b.affinityScore - a.affinityScore);
 
-    const trackBatch = 8;
+    const trackBatch = 14;
     for (let i = 0; i < withDeezer.length; i += trackBatch) {
       const batch = withDeezer.slice(i, i + trackBatch);
       const results = await Promise.all(
         batch.map(async (s) => {
           try {
-            const data = await deezerTopTracks(s.deezerArtist!.id, 50);
+            const data = await deezerTopTracks(s.deezerArtist!.id, 5);
             return {
               id: s.deezerArtist!.id,
-              tracks: (data.data || []).map(deezerTrackToInfo),
+              tracks: (data.data || []).slice(0, 5).map(deezerTrackToInfo),
             };
           } catch {
             return { id: s.deezerArtist!.id, tracks: [] };
@@ -716,14 +482,12 @@ export async function GET(request: NextRequest) {
         if (r.tracks.length > 0) trackMap.set(r.id, r.tracks);
       });
       if (i + trackBatch < withDeezer.length) {
-        await new Promise((r) => setTimeout(r, 80));
+        await new Promise((r) => setTimeout(r, 20));
       }
     }
 
-    // ── Phase 8: Assemble final recommendations ──────────────────────
-    log(`Phase 7 done — fetched tracks for ${trackMap.size} artists`);
+    log(`Deezer previews — ${trackMap.size} artists`);
     const recommendations: ArtistRecommendation[] = scored.map((s) => {
-      const userTopTracks: TrackInfo[] = [];
       const userTopTrackNames: string[] = [];
       if (s.matchType === "direct") {
         const artistNameForLookup =
@@ -736,13 +500,11 @@ export async function GET(request: NextRequest) {
         }
         const seen = new Set<string>();
         for (const key of lookups) {
-          const tracks = userTopTracksByArtist.get(key) || [];
-          for (const t of tracks) {
-            if (seen.has(t.id)) continue;
-            seen.add(t.id);
-            userTopTrackNames.push(t.name);
-            const info = spotifyTrackToInfo(t);
-            if (info) userTopTracks.push(info);
+          const names = userTopTrackNamesByArtist.get(key) || [];
+          for (const name of names) {
+            if (seen.has(name)) continue;
+            seen.add(name);
+            userTopTrackNames.push(name);
           }
         }
       }
@@ -751,9 +513,11 @@ export async function GET(request: NextRequest) {
         ? trackMap.get(s.deezerArtist.id) || []
         : [];
 
-      // Cross-reference user top track names against the full Deezer catalog
+      // Mark Deezer tracks that appear in the user's Last.fm top tracks
       const normalizedUserNames = new Set(
-        userTopTrackNames.map((n) => n.toLowerCase().replace(/[^a-z0-9]/g, ""))
+        userTopTrackNames.map((n) =>
+          n.toLowerCase().replace(/[^a-z0-9]/g, "")
+        )
       );
       for (const dt of allDeezerTracks) {
         const norm = dt.title.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -762,44 +526,45 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Build display list: overlapping user top tracks first, then fill
-      // remaining slots with the most popular Deezer tracks (up to 5 total)
       const DISPLAY_CAP = 5;
       const matched = allDeezerTracks.filter((t) => t.isUserTopTrack);
       const popular = allDeezerTracks.filter((t) => !t.isUserTopTrack);
       const shownMatched = matched.slice(0, DISPLAY_CAP);
       const remaining = DISPLAY_CAP - shownMatched.length;
-      const displayTracks = [
-        ...shownMatched,
-        ...popular.slice(0, remaining),
-      ];
+      const displayTracks = [...shownMatched, ...popular.slice(0, remaining)];
+
+      const mightLike = s.matchType !== "none" && s.affinityScore > 0;
 
       return {
         setTime: s.setTime,
         artist: s.deezerArtist
-          ? {
-              name: s.deezerArtist.name,
-              image: s.deezerArtist.picture_big || s.deezerArtist.picture_medium,
-              link: s.deezerArtist.link,
-              fans: s.deezerArtist.nb_fan,
-              deezerId: s.deezerArtist.id,
-            }
+          ? (() => {
+              const { image, link } = enrichDeezerArtistFromLineup(
+                s.setTime.artist,
+                s.deezerArtist
+              );
+              return {
+                name: s.deezerArtist.name,
+                image,
+                link,
+                deezerId: s.deezerArtist.id,
+              };
+            })()
           : null,
         affinityScore: s.affinityScore,
         affinityReason: s.affinityReason,
         topTracks: displayTracks,
-        userTopTracks: userTopTracks.slice(0, 5),
         userTopTrackNames: userTopTrackNames.slice(0, 10),
         matchType: s.matchType,
         relatedTo: s.relatedTo,
         genreOverlap: s.genreOverlap,
+        mightLike,
       };
     });
 
-    // ── Phase 9: Build optimized schedule per day ────────────────────
-    log(`Phase 8 done — ${recommendations.length} recommendations assembled`);
-    // Two-pass greedy: first pass picks greedily by score, second pass
-    // tries to fill gaps with lower-scored artists that fit.
+    log(`Assembled ${recommendations.length} recommendations`);
+
+    // ── Optimized schedule per day (unchanged heuristic) ──────────────
     const days = ["friday", "saturday", "sunday"] as const;
     const optimizedSchedule: DaySchedule[] = days.map((day) => {
       const dayRecs = recommendations
@@ -818,7 +583,9 @@ export async function GET(request: NextRequest) {
         if (conflict) continue;
 
         const prevSet = picked
-          .filter((p) => timeToMinutes(p.setTime.endTime) <= recStart)
+          .filter(
+            (p) => timeToMinutes(p.setTime.endTime) <= recStart
+          )
           .sort(
             (a, b) =>
               timeToMinutes(b.setTime.endTime) -
@@ -838,8 +605,7 @@ export async function GET(request: NextRequest) {
         picked.push(rec);
       }
 
-      // Pass 2: Try to fill gaps — look for recs that can fit in time
-      // slots where nothing is picked. Allows discovering more artists.
+      // Pass 2: Fill gaps
       const unpicked = dayRecs.filter(
         (r) => !picked.includes(r) && r.affinityScore > 0
       );
@@ -851,9 +617,10 @@ export async function GET(request: NextRequest) {
         );
         if (conflict) continue;
 
-        // Find the closest previous and next picked sets
         const prevSet = picked
-          .filter((p) => timeToMinutes(p.setTime.endTime) <= recStart)
+          .filter(
+            (p) => timeToMinutes(p.setTime.endTime) <= recStart
+          )
           .sort(
             (a, b) =>
               timeToMinutes(b.setTime.endTime) -
@@ -862,14 +629,15 @@ export async function GET(request: NextRequest) {
 
         const recEnd = timeToMinutes(rec.setTime.endTime);
         const nextSet = picked
-          .filter((p) => timeToMinutes(p.setTime.startTime) >= recEnd)
+          .filter(
+            (p) => timeToMinutes(p.setTime.startTime) >= recEnd
+          )
           .sort(
             (a, b) =>
               timeToMinutes(a.setTime.startTime) -
               timeToMinutes(b.setTime.startTime)
           )[0];
 
-        // Check walk feasibility from prev
         if (prevSet) {
           const walkTime = getWalkingTime(
             prevSet.setTime.stage as Stage,
@@ -880,7 +648,6 @@ export async function GET(request: NextRequest) {
           if (walkTime > gapMinutes + 10) continue;
         }
 
-        // Check walk feasibility to next
         if (nextSet) {
           const walkTime = getWalkingTime(
             rec.setTime.stage as Stage,
@@ -894,8 +661,7 @@ export async function GET(request: NextRequest) {
         picked.push(rec);
       }
 
-      // Pass 3: Swap optimization — try replacing low-score picks with
-      // higher-score ones that were blocked by walk constraints
+      // Pass 3: Swap optimization
       const blocked = dayRecs.filter(
         (r) => !picked.includes(r) && r.affinityScore > 0
       );
@@ -904,16 +670,13 @@ export async function GET(request: NextRequest) {
         improved = false;
         for (const candidate of blocked) {
           if (picked.includes(candidate)) continue;
-          // Find which picked set(s) it conflicts with
           const conflicting = picked.filter((p) =>
             setsOverlap(p.setTime, candidate.setTime)
           );
-          if (conflicting.length !== 1) continue; // skip multi-conflicts
+          if (conflicting.length !== 1) continue;
           const victim = conflicting[0];
-          // Only swap if candidate is meaningfully better
           if (candidate.affinityScore <= victim.affinityScore * 1.3) continue;
 
-          // Temporarily swap and check walk feasibility
           const testPicked = picked.filter((p) => p !== victim);
           testPicked.push(candidate);
           testPicked.sort((a, b) =>
@@ -926,7 +689,7 @@ export async function GET(request: NextRequest) {
             const curr = testPicked[j];
             const currStart = timeToMinutes(curr.setTime.startTime);
             const prevEnd = timeToMinutes(prev.setTime.endTime);
-            if (currStart < prevEnd) continue; // overlap handled above
+            if (currStart < prevEnd) continue;
             const walk = getWalkingTime(
               prev.setTime.stage as Stage,
               curr.setTime.stage as Stage
@@ -941,7 +704,7 @@ export async function GET(request: NextRequest) {
             const idx = picked.indexOf(victim);
             picked[idx] = candidate;
             improved = true;
-            break; // restart the improvement loop
+            break;
           }
         }
       }
@@ -990,56 +753,34 @@ export async function GET(request: NextRequest) {
       (a, b) => b.affinityScore - a.affinityScore
     );
 
-    log(`Phase 9 done — schedule built. Sending ${allRecs.length} recs. Total time: ${Date.now() - t0}ms`);
+    log(
+      `Phase 9 done — schedule built. Sending ${allRecs.length} recs. Total time: ${Date.now() - t0}ms`
+    );
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       recommendations: allRecs,
       optimizedSchedule,
       totalMatched: allRecs.filter((r) => r.matchType === "direct").length,
       totalDiscovery: allRecs.filter(
-        (r) => r.matchType === "genre" || r.matchType === "related"
+        (r) => r.mightLike && r.matchType !== "direct"
       ).length,
       totalArtists: allRecs.length,
-      userGenres: [...genreProfile.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 20)
-        .map(([genre, weight]) => ({ genre, weight })),
     });
-
-    if (session.refreshed) {
-      response.cookies.set("sp_access", session.accessToken, SPOTIFY_COOKIE_OPTS);
-      response.cookies.set("sp_refresh", session.refreshToken, SPOTIFY_COOKIE_OPTS);
-      response.cookies.set("sp_expires", String(session.expiresAt), SPOTIFY_COOKIE_OPTS);
-      response.cookies.set("sp_scope", session.scope, SPOTIFY_COOKIE_OPTS);
-    }
-
-    return response;
   } catch (error) {
     console.error("Recommendation error:", error);
     const msg = error instanceof Error ? error.message : "";
-    if (error instanceof SpotifyScopeError) {
-      const response = NextResponse.json(
-        { error: "Reauthentication required", code: "insufficient_scope" },
-        { status: 401 }
+    if (error instanceof LastfmError) {
+      return NextResponse.json(
+        { error: "Could not fetch your Last.fm data. Please try again." },
+        { status: 503 }
       );
-      clearSpotifySessionCookies(response);
-      return response;
-    }
-    if (error instanceof SpotifyForbiddenError) {
-      console.error("Spotify denied recommendation access:", error.detail || error.message);
-      const response = NextResponse.json(
-        { error: "Spotify access denied", code: "spotify_access_denied" },
-        { status: 401 }
-      );
-      clearSpotifySessionCookies(response);
-      return response;
     }
     const rateLimited =
       msg.includes("rate limit") || msg.includes("429");
     return NextResponse.json(
       {
         error: rateLimited
-          ? "Spotify is rate-limiting requests — please try again in a few minutes"
+          ? "Too many requests — please try again in a few minutes"
           : "Failed to generate recommendations",
       },
       { status: rateLimited ? 503 : 500 }

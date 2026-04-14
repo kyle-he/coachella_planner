@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn-images.dzcdn.net" },
       { protocol: "https", hostname: "api.deezer.com" },
       { protocol: "https", hostname: "cdnt-preview.dzcdn.net" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
   },
 };

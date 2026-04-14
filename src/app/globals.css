@@ -13,6 +13,8 @@
   --teal: #00404f;
   --cream: #f9e7cd;
   --green: #294e2d;
+  /* Sky / ticket blue — under transparent canvas texture in header strip */
+  --coachella-sky: #2179a3;
 
   /* Aliases — keep Tailwind class names working (cyan/blue/yellow) */
   --cyan: var(--teal);
@@ -93,6 +95,8 @@
 
 html {
   background: var(--background);
+  /* Slightly larger default than 16px — improves readability for rem-based type */
+  font-size: 106.25%;
 }
 
 body {
@@ -378,6 +382,26 @@ button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--teal);
   outline-offset: 2px;
+}
+
+/* ── Header: flat banner (no bottom fade) ─ */
+
+.header-canvas-strip {
+  --header-canvas-min-h: 3.5rem;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  padding-block: 0.5rem;
+  min-height: var(--header-canvas-min-h);
+  background-color: var(--coachella-sky);
+  background-image: url("/coachella-brand/header-banner.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 
 /* ── Coachella gradient utility ───────────────────────────────────── */

@@ -1,26 +1,27 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { LandingHero } from "./LandingHero";
 import { AuthErrorBanner } from "./AuthErrorBanner";
 import { AuthSessionReset } from "./AuthSessionReset";
 
-export default function Home() {
-  const authOrigin = (() => {
-    const redirectUri = process.env.SPOTIFY_REDIRECT_URI?.trim();
-    if (!redirectUri) return "";
+export default async function Home({
+  params,
+  searchParams,
+}: {
+  params?: Promise<Record<string, string | string[]>>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  await Promise.all([
+    params ?? Promise.resolve({}),
+    searchParams ?? Promise.resolve({}),
+  ]);
 
-    try {
-      return new URL(redirectUri).origin;
-    } catch {
-      return "";
-    }
-  })();
-
-  const authHref = authOrigin
-    ? `${authOrigin}/api/auth/logout?next=/api/auth/login`
-    : "/api/auth/logout?next=/api/auth/login";
+  const session = await auth();
+  if (session?.user) redirect("/schedule");
 
   return (
-    <main className="min-h-screen relative overflow-hidden">
+    <main className="relative flex min-h-screen flex-col overflow-hidden">
       <div className="noise-overlay" aria-hidden />
 
       <Suspense fallback={null}>
@@ -28,38 +29,20 @@ export default function Home() {
         <AuthErrorBanner />
       </Suspense>
 
-      <LandingHero authHref={authHref} />
+      <LandingHero />
 
-      {/* Stats strip */}
-      <div className="grain-strong relative z-10 border-t border-dashed border-border/70 px-8 sm:px-12 lg:px-16">
-        <div className="max-w-2xl mx-auto grid grid-cols-3">
-          <div className="border-r border-dashed border-border/60 px-6 py-6 text-center -rotate-1">
-            <div className="font-display text-2xl font-bold text-cyan">137</div>
-            <div className="text-[11px] text-muted mt-1 tracking-wide uppercase">
-              Artists
-            </div>
-          </div>
-          <div className="border-r border-dashed border-border/60 px-6 py-6 text-center rotate-1">
-            <div className="font-display text-2xl font-bold text-cyan">7</div>
-            <div className="text-[11px] text-muted mt-1 tracking-wide uppercase">
-              Stages
-            </div>
-          </div>
-          <div className="px-6 py-6 text-center -rotate-1">
-            <div className="font-display text-2xl font-bold text-cyan">3</div>
-            <div className="text-[11px] text-muted mt-1 tracking-wide uppercase">
-              Days
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="grain-strong relative z-10 border-t border-dashed border-border/70 px-8 py-6 sm:px-12 lg:px-16">
-        <div className="max-w-2xl mx-auto flex items-center justify-between text-[11px] text-muted/50">
-          <span>Coachella Planner 2026</span>
-          <span>Not affiliated with Goldenvoice</span>
-        </div>
+      <footer className="grain-strong relative z-10 border-t border-border/40 px-8 py-6 sm:px-12 lg:px-16">
+        <p className="max-w-2xl mx-auto text-center text-[12px] text-muted/50">
+          Made with ❤️ by{" "}
+          <a
+            href="https://kylehe.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted/70 underline decoration-dotted underline-offset-2 hover:text-foreground transition-colors"
+          >
+            Kyle He
+          </a>
+        </p>
       </footer>
     </main>
   );

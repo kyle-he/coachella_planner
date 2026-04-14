@@ -1,0 +1,842 @@
+{
+  "source": "https://www.coachella.com/lineup",
+  "dataPath": "711/2g4uo3jiai93brm3",
+  "generatedAt": "2026-04-14T08:27:11.096Z",
+  "byKey": {
+    "friends": {
+      "title": "&friends",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/bd23ed6a-ff43-e385-5f00-eb1203031d17.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0Z7zcsIphrPDnfZj9Ppqw0?si=WkIHBK26TsWsOQGPprM9ig"
+    },
+    "54 ultra": {
+      "title": "54 Ultra",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/95e96522-23bd-830f-7a44-78b257bef6ce.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6X5L6rmyvrWWu60Gx6exiZ"
+    },
+    "anyma": {
+      "title": "Anyma",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/b6948887-6222-a1e3-5e92-dab515635868.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4iBwchw0U0GZv5RfVYSMxN"
+    },
+    "adriatique": {
+      "title": "Adriatique",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/8e568143-5f45-ff04-7f03-9d30b8fc6ac1.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/02DWGcShQivFepRvGJ7xhB?si=pkLWq2c_QFid7SEm07ICmA"
+    },
+    "alex g": {
+      "title": "Alex G",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/91005d7f-b899-8e34-51d4-7497b6a2d7a4.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6lcwlkAjBPSKnFBZjjZFJs"
+    },
+    "addison rae": {
+      "title": "Addison Rae",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/d6ca013b-378a-67a6-676e-a99b05fbc17e.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4gvjmrtzydbMpyJaXUtwvP"
+    },
+    "arodes": {
+      "title": "Arodes",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/0a813884-a537-5697-bdea-41a3b7f23c4a.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4p2f8wUtltMAFuIJB4NR47?si=hHq7FBZ0S_SInnWnOnGsIw"
+    },
+    "bedouin": {
+      "title": "Bedouin",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/876b5398-44d0-f46e-4170-e46aa0473219.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5bKdC6382t97Qnpvs81Rqx?si=OcOkTVBtRJGGU2MeJm-UaA&nd=1&dlsi=73a4d26f6e0f43d2"
+    },
+    "azzecca": {
+      "title": "AZZECCA",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/460fe4de-2af0-751e-d75c-5da90c8a6a5d.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2k5DY2QDU3kBi5DX7OQlWj"
+    },
+    "armin van buuren x adam beyer": {
+      "title": "Armin van Buuren x Adam Beyer",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/c1bcdc03-0476-e428-d8f4-f7ac97e55e29.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0SfsnGyD8FpIN4U4WCkBZ5?si=fz_0MyqxR8iu3dLU88CEow"
+    },
+    "ben sterling": {
+      "title": "Ben Sterling",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/ec123a5a-f711-1cda-9a1d-96628047f626.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/79uJoLQkQ621xZy7MyH4uL"
+    },
+    "bini": {
+      "title": "BINI",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/ab0cd2bd-a2a2-c546-868c-11ef229aaa17.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/7tNO3vJC9zlHy2IJOx34ga?si=uw2hDXjRQcG44PbR75AFtQ"
+    },
+    "bigbang": {
+      "title": "BIGBANG",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/3388d4e7-4534-0f4e-0117-874f1f702d67.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4Kxlr1PRlDKEB0ekOCyHgX?si=1-B57xB4QOKSDpySuIbcng"
+    },
+    "black flag": {
+      "title": "Black Flag",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/c11bfc82-26e5-b61f-0aba-847a80212b56.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5Mhs3Eu8lU6sRCtRYsmABV?si=iUuPpm1iTQWO923f8HOgWA"
+    },
+    "blondshell": {
+      "title": "Blondshell",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/fd0b8481-f906-ef0f-5baf-69aa094209b8.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/7qrEXiLLnWkkYHhadZ1Oij"
+    },
+    "blood orange": {
+      "title": "Blood Orange",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/bbce870a-18f6-4a31-df3e-24b86778d14d.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6LEeAFiJF8OuPx747e1wxR?si=0-3SGk_XQOG-zPsVp1Skqw"
+    },
+    "bunt": {
+      "title": "BUNT.",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/8418a7eb-c01e-954e-5643-49c233766501.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2CpLIMBoE2ZzyY3ZBCRZ7j"
+    },
+    "bob baker marionettes": {
+      "title": "Bob Baker Marionettes",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/ad693d01-b96c-a07f-4f8a-24a4d55376a3.jpg",
+      "spotifyUrl": null
+    },
+    "carlita x josh baker": {
+      "title": "Carlita x Josh Baker",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/9788bec6-790a-29fa-b18c-ccd3b4458b10.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1GVbOnrND8b3eh2JZ4opw8"
+    },
+    "boys noize": {
+      "title": "Boys Noize",
+      "imageUrl": "https://media.aegamp.com/711/f35adb80-129c-979c-e2d1-76fb4da1d139.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/62k5LKMhymqlDNo2DWOvvv?si=Z3HYnusVTSCN8LMunnvWpQ"
+    },
+    "cachirula loojan": {
+      "title": "Cachirula & Loojan",
+      "imageUrl": "https://media.aegamp.com/711/53812b49-05bd-9ea6-0bf3-07ab92173079.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5vcFoQxKd0ZpA178xDU12G"
+    },
+    "clipse": {
+      "title": "CLIPSE",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/247bbd5b-d5d4-22c3-0185-e0f96bda393f.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2J257euzcjnDLipsyJH3F2"
+    },
+    "cmat": {
+      "title": "CMAT",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/fa5e5a7b-7fc6-bee7-372e-7316257d8c30.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3VBNIRx1LxVdRqOiPgkLwv"
+    },
+    "cobrah": {
+      "title": "COBRAH",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/c8bdc9a5-901b-5502-aee3-cf368bffe21d.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1AHswQqsDNmu1xaE8KpBne?si=zZwSDsRiTG2K6LoCctaEuQ"
+    },
+    "ceremony": {
+      "title": "Ceremony",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/b446fa68-3446-e646-c46e-00f8152a5c2c.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5n3811iYeaFM01gSJMQuRH?si=Cex2-W8eQEuqPqT_3DtH7A"
+    },
+    "chloe caillet x rossi": {
+      "title": "Chloé Caillet x Rossi.",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/a752c56a-c96b-98cb-7812-e78a70a914ef.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/68ywCN6ZpInbcilOfLBa3a?si=h6JptJPnRxSbvYTQOzIzCw"
+    },
+    "central cee": {
+      "title": "Central Cee",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/0dcd7872-4783-67c4-8996-679599999613.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5H4yInM5zmHqpKIoMNAx4r"
+    },
+    "carolina durante": {
+      "title": "Carolina Durante",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/1a92d010-1841-3af1-a1e7-be06adb2f2cc.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2BVE7Pqd8kxv9xEsuvoJoE"
+    },
+    "creepy nuts": {
+      "title": "Creepy Nuts",
+      "imageUrl": "https://media.aegamp.com/711/7dd30a97-c77a-949e-f0aa-f7a0aa11beaa.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0pWR7TsFhvSCnbmHDjWgrE"
+    },
+    "die spitz": {
+      "title": "Die Spitz",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/9510cec9-d6fe-cd08-8a85-2087dee12f63.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0zfZmpHTu0MlkkNr5KHeXE"
+    },
+    "devo": {
+      "title": "Devo",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/f37839e5-daf4-a05e-941d-d416b9d0b8dd.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0UKfenbZb15sqhfPC6zbt3?si=nTafFNbTSr6dhJWjt6xvsA"
+    },
+    "dijon": {
+      "title": "Dijon",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/9648499c-7931-2e15-f721-8edc9d6402cb.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0knGpCTbmG4ctl1wzYRZs4"
+    },
+    "disclosure": {
+      "title": "Disclosure",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/9743b70b-9e9e-68c9-2cd1-608ea1bea518.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6nS5roXSAGhTGr34W6n7Et?si=UyYDxUGbQriZq6gRmCvXyw"
+    },
+    "davido": {
+      "title": "Davido",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/0d1ec095-a45d-d464-cfe2-44fe6f3efaf4.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0Y3agQaa6g2r0YmHPOO9rh?si=J0SafZo3RjGx0uXiecfCoA"
+    },
+    "david byrne": {
+      "title": "David Byrne",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/6b2f92c1-2da9-2519-1aa1-bb2358868cc5.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/20vuBdFblWUo2FCOvUzusB"
+    },
+    "dabeull": {
+      "title": "Dabeull",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/1402be9e-bfd5-96f0-fc5c-dd1b6be23db6.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/7sw3xJMTpdcpfssx17hfrb?autoplay=true"
+    },
+    "drain": {
+      "title": "DRAIN",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/ced9ddf9-1c71-848b-5e05-975bfb503b61.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/7FAAkDlPg6pg0860CIDzmu"
+    },
+    "ethel cain": {
+      "title": "Ethel Cain",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/4c2c6860-1e37-69f6-627c-5ca98c8480a2.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0avMDS4HyoCEP6RqZJWpY2?si=NHxVx0B6Siuibc9QNlpMsgg"
+    },
+    "ecca vandal": {
+      "title": "Ecca Vandal",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/75b0a0d0-8003-7b04-a47b-8b7239c04e05.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0NhKCHTPG7Sz62S3zxV1Cf"
+    },
+    "duke dumont": {
+      "title": "Duke Dumont",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/21890b3f-7265-331f-9e64-df32c5f5cd4c.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/61lyPtntblHJvA7FMMhi7E"
+    },
+    "fakemink": {
+      "title": "fakemink",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/4e75d4d3-fc4a-a5b6-b81c-ff013a027593.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0qc4BFxcwRFZfevTck4fOi?si=4YHZUGieQ9GU6k2TkyVFEA"
+    },
+    "fka twigs": {
+      "title": "FKA twigs",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/fkatwigs_resized_1774976556941_3726.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6nB0iY1cjSY1KyhYyuIIKH?si=Pc8Xt0gvSO6KsbmqSsWOyA"
+    },
+    "febuary": {
+      "title": "Febuary",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/a5992621-24e1-f2f5-7c37-d6a8fe60acbb.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4CwzptvBGg45GGh2a5yOOh?si=ET8qpuVVRXWpl_a590F4Cw"
+    },
+    "fleshwater": {
+      "title": "Fleshwater",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/8a9a0078-ef4e-222a-2624-db4b49559bdf.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6P5ccCJCe8A4s9tDSTNFzF?si=D5Bm5zdLROSRFmD5xKc2Gw"
+    },
+    "foster the people": {
+      "title": "Foster the People",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/f7a6509f-8829-4ccb-c2b6-8915664119b9.png",
+      "spotifyUrl": "https://open.spotify.com/artist/7gP3bB2nilZXLfPHJhMdvc?si=2uP_vFLZS6y49qBf3Os_KQ"
+    },
+    "fujii kaze": {
+      "title": "Fujii Kaze",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/b1df6d1b-1621-e1a5-be6e-ddf96407c242.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6bDWAcdtVR3WHz2xtiIPUi?si=N16NzxQBQH2OA_HzpfEFKQ"
+    },
+    "flowerovlove": {
+      "title": "flowerovlove",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/97cc3185-cef3-5afc-68e0-1c3455a11a24.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1JspXUvEv3D9ddMeLNqYWj"
+    },
+    "freak slug": {
+      "title": "Freak Slug",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/d3c3b0e9-4ddc-aa17-8f3a-3eb4a9f0c883.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5wk7sY8GIg5ihSI09EbWeS?si=hpVoISP6S16S8sGUMOD7kA"
+    },
+    "french police": {
+      "title": "French Police",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/dc3ca9c7-5f8d-f368-97ee-ff299e4d14d3.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/75vqTLIltGApfI0NxcsJaC?autoplay=true"
+    },
+    "green velvet x ayybo": {
+      "title": "Green Velvet x AYYBO",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/greenvelvet-x-ayybo_TOGETHER_1775603202716_7899.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3ABaec4jjl95VqmG1iD4k2"
+    },
+    "gordo": {
+      "title": "Gordo",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/a7d46936-a41c-40b2-825c-02dc6b7c8443.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4Ge9GwmWnOQsohwPTrXyHc"
+    },
+    "giveon": {
+      "title": "GIVĒON",
+      "imageUrl": "https://media.aegamp.com/711/2637efa4-cf82-0e5c-787f-d0050e788b31.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4fxd5Ee7UefO4CUXgwJ7IP?si=2F1LjmMOSdm5zGl8NtPhtQ"
+    },
+    "glitterer": {
+      "title": "Glitterer",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/c5c65d9e-2592-ddfb-ec77-117f971221a3.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2bTjArGDYivNxnYFH5jUcj"
+    },
+    "gigi perez": {
+      "title": "Gigi Perez",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/80d91d35-1fbd-96ca-9778-3bab4857bdd8.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1iCnM8foFssWlPRLfAbIwo"
+    },
+    "geese": {
+      "title": "Geese",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/cf7fbc87-b856-b9b6-484e-2121088ff3ad.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0WCo84qtCKfbyIf1lqQWB4?si=Z8u8tc7ATZmpinl74qj9Zg"
+    },
+    "genesi": {
+      "title": "GENESI",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/4ca70d1a-51f5-a8f9-c4fc-47cbb7751f04.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4OG9hOPsfAEziKvOJj2SG7"
+    },
+    "hot mulligan": {
+      "title": "Hot Mulligan",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/bdc87bf7-450b-fb18-4637-878814308c6c.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1lKZzN2d4IqiEYxyECIEHI"
+    },
+    "hamdi": {
+      "title": "Hamdi",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/9c81454e-3bbe-aa59-d03a-e93b24ffcae0.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/7vvicoei9BbKpZix8qSeLg?si=3kJBI2TESquI2B8aPQVSvw"
+    },
+    "holly humberstone": {
+      "title": "Holly Humberstone",
+      "imageUrl": "https://media.aegamp.com/711/dd6c10fc-1e33-eb4b-0714-d822837db387.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0nnYdIpahs41QiZ9MWp5Wx"
+    },
+    "groove armada dj set": {
+      "title": "Groove Armada (DJ Set)",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/57957f02-85b8-53a3-7cd7-a33e34a73f06.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/67tgMwUfnmqzYsNAtnP6YJ"
+    },
+    "iggy pop": {
+      "title": "Iggy Pop",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/5e146ef9-1261-0e13-e9d0-d724d96c8685.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/33EUXrFKGjpUSGacqEHhU4"
+    },
+    "hugel": {
+      "title": "HUGEL",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/8c95f401-0a3e-4eb4-41ed-cfd004528388.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5PlfkPxwCpRRWQJBxCa0By"
+    },
+    "jane remover": {
+      "title": "Jane Remover",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/9bb4a168-23c4-20c2-f5f6-73344104da52.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2rLGlNI6htigNxx172qxLu"
+    },
+    "joost": {
+      "title": "Joost",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/562f3bd5-6057-efc9-969b-f6382badc2f0.png",
+      "spotifyUrl": "https://open.spotify.com/artist/6s5ubAp65wXoTZefE01RNR?si=DeliQ-rITOqL0RPL_Ilxmw"
+    },
+    "jessica brankka": {
+      "title": "Jessica Brankka",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/4c13fa4f-4ac8-f901-c138-ae5a0bc761f4.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0bC8yGVqpx20z9mLADTooz"
+    },
+    "karol g": {
+      "title": "KAROL G",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/ec20eaa1-4442-2170-6cfa-9347b57e5363.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/790FomKkXshlbRYZFtlgla?si=p4GA45ZZSjabSUWJ7sN7Tw&nd=1&dlsi=c72a30ccbd29420e"
+    },
+    "interpol": {
+      "title": "Interpol",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/3a5f6491-8f8d-1308-d4a5-760b2f76f4ef.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3WaJSfKnzc65VDgmj2zU8B"
+    },
+    "joyce manor": {
+      "title": "Joyce Manor",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/30932453-90db-3feb-127d-142472b2cf52.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/7qbvNcfTfckhCNM8NiR8nN"
+    },
+    "justin bieber": {
+      "title": "Justin Bieber",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/18cd3de0-424a-d1b0-43fc-e7fc36ff4fec.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1uNFoZAHBGtllmzznpCI3s"
+    },
+    "levity": {
+      "title": "Levity",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/3e99f108-4332-b958-56b3-ad8dd2350265.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1PbO7aQiVeKbGp8GYWDL9C"
+    },
+    "katseye": {
+      "title": "KATSEYE",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/480d6070-717f-6da1-81dd-153cee688e67.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3c0gDdb9lhnHGFtP4prQpn"
+    },
+    "kettama": {
+      "title": "Kettama",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/36077130-1c77-5c60-190f-c1123d5b58a9.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3an9rnsXKPCAMlZgH4A0n4"
+    },
+    "laufey": {
+      "title": "Laufey",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/7d51f634-a11f-cc2f-4883-fd053ed2ab1b.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/7gW0r5CkdEUMm42w9XpyZO?si=kB-8xiYcTgOANmlmzkIN0A"
+    },
+    "labrinth": {
+      "title": "Labrinth",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/e248316e-b32d-4eae-13ae-dfed4fcf811b.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2feDdbD5araYcm6JhFHHw7?si=Rxt_cCySTZKDZbyMYEWMvg"
+    },
+    "kaskade": {
+      "title": "Kaskade",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/0e102854-f491-d38f-fe37-ca0c70d9974a.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6TQj5BFPooTa08A7pk8AQ1"
+    },
+    "le yora": {
+      "title": "LE YORA",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/3b965054-0060-6c88-b86a-85ff8abf2ea5.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0JguaqQNo1CgVjFqtIXyGR"
+    },
+    "los hermanos flores": {
+      "title": "Los Hermanos Flores",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/003574fb-66fb-bd2a-a914-f9e691949572.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3S43VHav7suUXwnPFvoR9O?si=KTLm152-QCaIYvlMkwElDQ"
+    },
+    "los retros": {
+      "title": "Los Retros",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/57864eee-a558-1f62-bbb8-a8709664ea21.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0qraFJK6boYSp4ZMMX4PzG?si=qTACvBA4RFeGdWCpvN_1GA&dl_branch=1&nd=1&dlsi=cb70e906386c407d"
+    },
+    "mahmut orhan": {
+      "title": "Mahmut Orhan",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/2d3bc269-ad19-df74-1ce4-c81763ee763a.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3t8WiyalpvnB9AObcMufiE?si=N6HMHYtiSkmRGz3o2DndIg"
+    },
+    "little simz": {
+      "title": "Little Simz",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/4d3214ba-b952-cd77-8ce3-2849fa9f6b7e.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6eXZu6O7nAUA5z6vLV8NKI?si=8YYMh6iYR3iWETztBF2-DA"
+    },
+    "marlon hoffstadt": {
+      "title": "Marlon Hoffstadt",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/eaaa6071-ed8b-4461-ce1c-6a4bfe03068e.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0HHa7ZJZxUQlg5l2mB0N0f"
+    },
+    "lykke li": {
+      "title": "Lykke Li",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/lykkeli_resized_1774317575574_7540.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6oBm8HB0yfrIc9IHbxs6in?si=0XMEVBfoR5aoLWxMY3idyg"
+    },
+    "major lazer": {
+      "title": "Major Lazer",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/999c57f9-7316-40ce-cf51-d3123ebb4bd9.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/738wLrAtLtCtFOLvQBXOXp"
+    },
+    "luisa sonza": {
+      "title": "Luísa Sonza",
+      "imageUrl": "https://media.aegamp.com/711/d6c683ba-2278-65ec-4420-5574e9477ada.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4PzYKhC14sTJNEr0dzoo0d?si=NSRn6hXkToKxLIYWIyORlg"
+    },
+    "mestiza": {
+      "title": "MËSTIZA",
+      "imageUrl": "https://media.aegamp.com/711/8ac928e2-fe76-f065-cef7-29b8036f73b5.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1l6pQ0SDItjXzbG9zloE2n"
+    },
+    "max dean x luke dean": {
+      "title": "Max Dean x Luke Dean",
+      "imageUrl": "https://media.aegamp.com/711/743fff0b-1f5c-e4f8-c035-4b2ca5a88f51.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/65TLDWbTJxYASqadmNAxvc?si=j2enXrowSGuyhXWbpnllpQ"
+    },
+    "mind enterprises": {
+      "title": "Mind Enterprises",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/b4d3233f-abc4-572a-e266-b439909e4335.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5pN1DJhPFDKso4OtC0QhnB?si=QytuVFCnRsyLXy0NF1180Q"
+    },
+    "moby": {
+      "title": "Moby",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/ace119e6-91f3-d0d7-d1d1-825bdb26e698.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3OsRAKCvk37zwYcnzRf5XF"
+    },
+    "modelactriz": {
+      "title": "Model/Actriz",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/616cdb52-627c-840d-c2df-2a40c59d6565.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/7gdb1IQFHFQqCc5KoLTYNC"
+    },
+    "mochakk": {
+      "title": "Mochakk",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/58deb0b4-e149-7f7f-92e2-2327b7dc6eca.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0rTh1tAdrEbdKZBTiiAQSo"
+    },
+    "max styler": {
+      "title": "Max Styler",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/3d73b6ec-c4b2-44d4-440e-b7b49f825104.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3NKKngINK1tP6BFy0WOyWk?si=RVAxYiKrScugNQkvmxQZkw"
+    },
+    "ninajirachi": {
+      "title": "Ninajirachi",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/5a664c94-c13b-8fff-ef8d-94ec6ba6822f.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3MekbRujJg5VZThubOlrkR"
+    },
+    "newdad": {
+      "title": "NewDad",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/c19a5b8f-c151-7a5a-bfb6-60e2c65c9ff3.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1yz8XixOiIJJ9IxjbnfYV6"
+    },
+    "prospa": {
+      "title": "Prospa",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/7e72a18a-8ac9-d1af-1de2-defd3a6b751b.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6HabM2PUM519iIxervGWSb?si=FSo-5AWRT4Wtsmk7DHhO4w"
+    },
+    "oklou": {
+      "title": "Oklou",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/830bae12-e952-9b8e-d99a-3be86a13de3c.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6fFcUOFcbjeIuEomuUthkw"
+    },
+    "noga erez": {
+      "title": "Noga Erez",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/e1f5ddd1-4244-fefd-7655-d4e463706987.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5VwCIS8jdx9ZHjApLFNrTZ"
+    },
+    "pinkpantheress": {
+      "title": "PinkPantheress",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/ca649546-4c70-c956-2083-420f469d44d3.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/78rUTD7y6Cy67W1RVzYs7t"
+    },
+    "nine inch noize": {
+      "title": "Nine Inch Noize",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/8da68af1-3d46-7995-f05e-9f3370f7b976.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0X380XXQSNBYuleKzav5UO?si=l-Vngp75QiKr--CvUEpzYg"
+    },
+    "royksopp dj set": {
+      "title": "Röyksopp (DJ Set)",
+      "imageUrl": "https://media.aegamp.com/711/1e65b1ff-a91a-284d-fedd-166b6b28d809.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5nPOO9iTcrs9k6yFffPxjH?si=LxLdn5D2TDGHC8JAc9mUxQ"
+    },
+    "rusowsky": {
+      "title": "rusowsky",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/5973333b-b3d2-67e2-fcf4-eb243f834be2.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1XEVu7gdRFfzEFqsPrancH?si=t7WOIHcsSe29yNVaL8BkZA"
+    },
+    "sabrina carpenter": {
+      "title": "Sabrina Carpenter",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/c5b6f16c-1aa2-07ec-f32d-0375ac62e552.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/74KM79TiuVKeVCqs8QtB0B"
+    },
+    "riordan": {
+      "title": "Riordan",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/Riordan-new-Resized_1775581042802_3833.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/68rU1sdZ0HjxjEC5YnSmao?si=Z9fbSw07RA6XNWvZYrpVNA"
+    },
+    "roz": {
+      "title": "RØZ",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/9576938b-ceae-4483-3fd7-d0f119747f29.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0aULg7LximLNhI6lLzxcXI?si=fvGxK1MATp-QAuW-ff4_rQ"
+    },
+    "rezz": {
+      "title": "REZZ",
+      "imageUrl": "https://media.aegamp.com/711/4c5847ee-81aa-f52e-5bec-479b14a73ac7.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4aKdmOXdUKX07HVd3sGgzw?si=M4E0Lno2RdWiwHy6kwBPEg"
+    },
+    "royel otis": {
+      "title": "Royel Otis",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/aab8d9f3-0eed-bab0-fb31-53947113b580.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5b5bt4mZQpJMoCRbiQ7diH?si=YfhXzoioRq-MUFl359M4Qg"
+    },
+    "slayyyter": {
+      "title": "Slayyyter",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/50e50a15-e91c-f12e-2f8b-2473e8a8ce25.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4QM5QCHicznALtX885CnZC?si=2nKbDn_UTHeYFfUFSjC9qg"
+    },
+    "subtronics": {
+      "title": "Subtronics",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/4d3918cf-0a44-09c4-2d8f-64deab104e4d.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3NJ94iuAmmMjbszODYT6pO?si=KHquipPqQo6UzMyDI89CLg"
+    },
+    "sahar z": {
+      "title": "Sahar Z",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/d4747b77-d902-2fd9-95c8-e2c8983eb67b.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/47YdOgVXS5hzu5spoFFpHU"
+    },
+    "samia": {
+      "title": "Samia",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/00d61346-0879-d790-012f-7c51682febf4.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1Uk1GyijF6fSfX4mWq5bfR"
+    },
+    "sombr": {
+      "title": "SOMBR",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/e93d4040-6f61-a0d9-a184-1bba999030d8.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4G9NDjRyZFDlJKMRL8hx3S"
+    },
+    "suicidal tendencies": {
+      "title": "Suicidal Tendencies",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/02fa27fb-5b09-e298-f059-5a09969f4e9a.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3WPKDlucMsXH6FC1XaclZC"
+    },
+    "sexyy red": {
+      "title": "Sexyy Red",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/b80b84cd-1ce1-1124-6712-9588af9cf6e6.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3DbwFQlvLxRSi2uX8mf81A"
+    },
+    "sosa": {
+      "title": "SOSA",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/959bfdd3-5ddb-468f-d279-a75db4fb2ae9.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3JlN0MeWVJq0vjvsvWCRZ5?si=ZkvCC4olSYyymX5Vb4wUcA"
+    },
+    "the strokes": {
+      "title": "The Strokes",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/febd94c6-c597-84c0-3972-0a84fc81218d.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0epOFNiUfyON9EYx7Tpr6V"
+    },
+    "the rapture": {
+      "title": "The Rapture",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/95609e81-e21b-3472-f1c4-54579d1392b0.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/166Dz1GX3xonSQ3Z6CQW26?si=fMGUTj9XTBqFT98eWAV-7Q"
+    },
+    "the two lips": {
+      "title": "The Two Lips",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/785fa1e5-a247-a036-1327-628ffbe5d4b2.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0jtiZkDcuWRf647co8id50"
+    },
+    "swae lee": {
+      "title": "Swae Lee",
+      "imageUrl": "https://media.aegamp.com/711/ae08acac-8142-8566-4844-1e55a142381a.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1zNqQNIdeOUZHb8zbZRFMX"
+    },
+    "taemin": {
+      "title": "Taemin",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/ec495cb4-7cea-5ece-1bbd-a4122a931ef8.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/13rF01aOogvnkuQXOlgTW8?si=qHPUI62ST4-0BeoEyv4Yqg"
+    },
+    "the chats": {
+      "title": "The Chats",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/478d47f6-9592-0ecc-a2a1-7bfbcf29ae1f.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1aQ7P3HtKOQFW16ebjiks1"
+    },
+    "teddy swims": {
+      "title": "Teddy Swims",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/19e65998-58f5-1f00-8e5d-f298354e15b6.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/33qOK5uJ8AR2xuQQAhHump"
+    },
+    "the xx": {
+      "title": "The xx",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/f0166c56-cb50-cd3d-b4d9-f0a1ac910ecc.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/3iOvXCl6edW5Um0fXEBRXy"
+    },
+    "worship sub focus dimension culture shock 1991": {
+      "title": "Worship (Sub Focus, Dimension, Culture Shock, 1991)",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/66a217d1-2055-4b0f-9ab5-fbaefdce46a1.jpg",
+      "spotifyUrl": null
+    },
+    "yamagucci": {
+      "title": "Yamagucci",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/2a3dd9f9-0d7e-4e96-be64-23b4b6f758b0.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6EuSg8aungYTh6vNgL1EpG"
+    },
+    "wet leg": {
+      "title": "Wet Leg",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/c18961e2-1da0-b41c-b683-c7d7eb739715_1775692197469_5256.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2TwOrUcYnAlIiKmVQkkoSZ"
+    },
+    "whomadewho": {
+      "title": "WhoMadeWho",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/3af6c137-7190-fe11-b268-758b9215be6d.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/50Lr1puweM1hFsF1LpIZLM?autoplay=true"
+    },
+    "young thug": {
+      "title": "Young Thug",
+      "imageUrl": "https://media.aegamp.com/711/efbab70b-f978-b811-916b-88b378c0bd5b.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/50co4Is1HCEo8bhOyUWKpn?si=CsU-HeW_Tc-8YshIr1MzuA"
+    },
+    "turnstile": {
+      "title": "Turnstile",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/f003725e-31f5-fc2b-54de-42a2bd6aae86.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2qnpHrOzdmOo1S4ox3j17x"
+    },
+    "whatmore": {
+      "title": "WHATMORE",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/ee905cdb-5bf8-0034-d46a-c90cd26ef06e.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2y4kS2ljmS41pNDNA01P2Q"
+    },
+    "wednesday": {
+      "title": "Wednesday",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/0305928b-ab7a-40dd-573f-c6660920a17f.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4j7DrazfBZLLD0OrVoAtEe"
+    },
+    "ouuk uk1matu": {
+      "title": "¥ØU$UK€ ¥UK1MAT$U",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/a47dbba7-b4a4-afa1-36a4-16c5105eb1b8.jpg",
+      "spotifyUrl": null
+    },
+    "zulan": {
+      "title": "ZULAN",
+      "imageUrl": "https://media.aegamp.com/711/listdata/P3PUDT88CC/de16d34d-3047-034a-3e6c-5c34ca33257e.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/2Yz9F5lQVc0p6SDxkw2BvF"
+    },
+    "tomora": {
+      "title": "TOMORA",
+      "imageUrl": "https://media.aegamp.com/711/6d951822-1d5e-2711-0e1f-ec928a504b1b.png",
+      "spotifyUrl": null
+    },
+    "youna": {
+      "title": "Youna",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/f3a55fd4-7847-ae6c-440a-d087f57b472f.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4Y7OfWwgt2hCgZfyPMFUzC"
+    },
+    "bia": {
+      "title": "BIA",
+      "imageUrl": "https://media.aegamp.com/711/30fbc00c-fa8a-f786-de82-018c7789db91.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6veh5zbFpm31XsPdjBgPER"
+    },
+    "morat": {
+      "title": "Morat",
+      "imageUrl": "https://media.aegamp.com/711/debedc82-e85b-e7f4-b950-cd245cde9be5.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5C4PDR4LnhZTbVnKWXuDKD"
+    },
+    "sara landrys blood oath": {
+      "title": "Sara Landry's Blood Oath",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/bc836c77-dc72-2be0-606d-c60292275ecf.jpg",
+      "spotifyUrl": null
+    },
+    "david guetta": {
+      "title": "David Guetta",
+      "imageUrl": "https://media.aegamp.com/711/8bd2cabb-11ae-53eb-8df6-806a8d583e14.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/1Cs0zKBU1kc0i8ypK3B9ai"
+    },
+    "fatboy slim": {
+      "title": "Fatboy Slim",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/d8523ff1-df28-8158-6ba0-065c54d6ee93.jpg",
+      "spotifyUrl": "https://play.spotify.com/artist/4Y7tXHSEejGu1vQ9bwDdXW"
+    },
+    "pawsa": {
+      "title": "PAWSA",
+      "imageUrl": "https://media.aegamp.com/711/cd1b026c-09b0-7df7-e697-2befb8e67e0f.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/4E0HD2PMY8kQJIjlShrLUS"
+    },
+    "not for radio": {
+      "title": "Not For Radio",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/Not%20For%20Radio_1774653207570_7459.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/0oXhGlRUQ8aVTx8eO4MoMT"
+    },
+    "doom dave": {
+      "title": "Doom Dave",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775532904498_6617.jpg",
+      "spotifyUrl": null
+    },
+    "deep dish": {
+      "title": "Deep Dish",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/deepdish_forappandweb_1775581174315_7702.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/720JYpdCgHuTmDeryW0wEA"
+    },
+    "tiga": {
+      "title": "Tiga",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/Tiga-forappandweb_1775584814110_5123.jpg",
+      "spotifyUrl": null
+    },
+    "triste juventud": {
+      "title": "Triste Juventud",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533021684_6354.jpg",
+      "spotifyUrl": null
+    },
+    "afrojack x shimza": {
+      "title": "Afrojack x Shimza",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533036836_8460.jpg",
+      "spotifyUrl": null
+    },
+    "joezi": {
+      "title": "Joezi",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533051986_2898.jpg",
+      "spotifyUrl": null
+    },
+    "novasoul": {
+      "title": "Novasoul",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533083500_6747.jpg",
+      "spotifyUrl": null
+    },
+    "jaqck glam": {
+      "title": "Jaqck Glam",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533214010_6253.jpg",
+      "spotifyUrl": null
+    },
+    "massio": {
+      "title": "MASSIO",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533235781_7168.jpg",
+      "spotifyUrl": null
+    },
+    "gabe real": {
+      "title": "Gabe Real",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533248578_6142.jpg",
+      "spotifyUrl": null
+    },
+    "seekone": {
+      "title": "Seek-One",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533264640_9862.jpg",
+      "spotifyUrl": null
+    },
+    "cahuilla bird singers and dancers": {
+      "title": "Cahuilla Bird Singers and Dancers",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533276609_6142.jpg",
+      "spotifyUrl": null
+    },
+    "tiffany tyson": {
+      "title": "Tiffany Tyson",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533283143_6435.jpg",
+      "spotifyUrl": null
+    },
+    "juicewon": {
+      "title": "Juicewon",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533295312_6506.jpg",
+      "spotifyUrl": null
+    },
+    "teed": {
+      "title": "TEED",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533307253_7092.jpg",
+      "spotifyUrl": null
+    },
+    "girl math vnssa x nala": {
+      "title": "Girl Math (VNSSA x NALA)",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533325003_6456.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/6fjbZ7zQBYEy3kvB5JL5PM"
+    },
+    "tijuana panthers": {
+      "title": "Tijuana Panthers",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533347863_8845.jpg",
+      "spotifyUrl": null
+    },
+    "joy anonymous": {
+      "title": "JOY (Anonymous)",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533347622_4699.jpg",
+      "spotifyUrl": null
+    },
+    "panda chok": {
+      "title": "Panda & Chok",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533369205_6928.jpg",
+      "spotifyUrl": null
+    },
+    "jazzy": {
+      "title": "Jazzy",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533385173_6788.jpg",
+      "spotifyUrl": null
+    },
+    "jack white": {
+      "title": "Jack White",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/JackWhite-forappandweb_1775603222233_3285.jpg",
+      "spotifyUrl": null
+    },
+    "record safari": {
+      "title": "Record Safari",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533476560_1520.jpg",
+      "spotifyUrl": null
+    },
+    "loboman": {
+      "title": "LOBOMAN",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533488260_6983.jpg",
+      "spotifyUrl": null
+    },
+    "wyldeflower": {
+      "title": "wyldeflower",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775533509664_8957.jpg",
+      "spotifyUrl": null
+    },
+    "disco lines": {
+      "title": "Disco Lines",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/COACH26%20Placeholder_1775581600304_5349.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5Kmr0b3ip8g9P2i0dLTC3Z"
+    },
+    "linska": {
+      "title": "Linska",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/LINSKA%20-%20W2%20_1776130617541_1597.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/5f7jxYF5js7lD5lMyIPUBq?autoplay=true"
+    },
+    "dj snakes pardon my french": {
+      "title": "DJ Snake's Pardon My French",
+      "imageUrl": "https://media.aegamp.com/711/collection/P3PUDT88CC/pardonmyfrench_forappandweb_1776121592482_7161.jpg",
+      "spotifyUrl": "https://open.spotify.com/artist/540vIaP2JwjQb9dm3aArA4?autoplay=true"
+    }
+  }
+}

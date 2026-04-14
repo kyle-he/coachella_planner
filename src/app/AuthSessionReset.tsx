@@ -3,7 +3,14 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
-const KEYS_TO_CLEAR = ["coachella:schedule:v1", "coachella:session"];
+const KEYS_TO_CLEAR = [
+  "coachella:schedule:v1",
+  "coachella:schedule:v2",
+  "coachella:schedule:v3",
+  "coachella:schedule:v4",
+  "coachella:session",
+  "coachella:userplan:v1",
+];
 
 export function AuthSessionReset() {
   const searchParams = useSearchParams();

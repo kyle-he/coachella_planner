@@ -6,13 +6,13 @@ import {
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID ?? "";
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET ?? "";
 
-const SPOTIFY_TIMEOUT_MS = 10_000;
+const SPOTIFY_TIMEOUT_MS = 7_000;
 
 /** Hard cap so serverless handlers do not run unbounded. */
-const SPOTIFY_429_MAX_ATTEMPTS = 32;
-const SPOTIFY_429_MAX_TOTAL_MS = 120_000;
+const SPOTIFY_429_MAX_ATTEMPTS = 3;
+const SPOTIFY_429_MAX_TOTAL_MS = 8_000;
 /** Longest single wait between retries (Retry-After or backoff). */
-const SPOTIFY_429_MAX_DELAY_MS = 90_000;
+const SPOTIFY_429_MAX_DELAY_MS = 2_500;
 
 const CALLBACK_PATH = "/api/auth/callback";
 
@@ -90,18 +90,6 @@ async function spotifyFetchWith429Retries(
   }
 }
 
-/** Serialize api.spotify.com calls to avoid bursting the per-app rate limit. */
-let webApiQueue: Promise<unknown> = Promise.resolve();
-
-function enqueueWebApi<T>(fn: () => Promise<T>): Promise<T> {
-  const next = webApiQueue.then(fn, fn);
-  webApiQueue = next.then(
-    () => undefined,
-    () => undefined
-  );
-  return next;
-}
-
 /**
  * OAuth redirect_uri must match exactly what is registered in the Spotify app
  * and must match between /authorize and /api/token.
@@ -160,12 +148,9 @@ export function getRequestOrigin(request: NextRequest): string {
 /**
  * Spotify HTTP helper: timeout on each attempt; 429 → retry with backoff +
  * Retry-Until success or throw (no silent empty data). Web API requests are
- * queued one-at-a-time to reduce parallel 429s. Token endpoint is not queued.
+ * not serialized so callers can bulk-fetch endpoints in parallel.
  */
 function spotifyFetch(url: string, init?: RequestInit): Promise<Response> {
-  if (url.startsWith("https://api.spotify.com/")) {
-    return enqueueWebApi(() => spotifyFetchWith429Retries(url, init));
-  }
   return spotifyFetchWith429Retries(url, init);
 }
 

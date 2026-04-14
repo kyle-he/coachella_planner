@@ -1,34 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getAppUrl,
-  getAuthUrl,
-  getSpotifyRedirectUri,
-} from "@/lib/spotify";
-import {
-  clearSpotifySessionCookies,
-  createSpotifyOauthState,
-  setSpotifyOauthStateCookie,
-} from "@/lib/spotify-session";
+import { getUserInfo, LastfmNotFoundError } from "@/lib/lastfm";
+import { setLastfmSessionCookie } from "@/lib/lastfm-session";
+import { auth } from "@/auth";
+import { setLastfmUsername } from "@/lib/user-profile";
 
-function htmlRedirect(target: string) {
-  const escaped = JSON.stringify(target);
-  const html = `<!DOCTYPE html><html><head><meta charSet="utf-8" /><title>Redirecting…</title></head><body><script>window.location.replace(${escaped});</script><noscript><meta http-equiv="refresh" content="0;url=${target}"></noscript>Redirecting…</body></html>`;
-  return new NextResponse(html, {
-    status: 200,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
-}
-
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
+  let username: string;
   try {
-    const redirectUri = getSpotifyRedirectUri(request.nextUrl.origin);
-    const state = createSpotifyOauthState();
-    const response = htmlRedirect(getAuthUrl(redirectUri, state));
-    clearSpotifySessionCookies(response);
-    setSpotifyOauthStateCookie(response, state);
-    return response;
-  } catch (e) {
-    console.error("[auth/login]", e);
-    return NextResponse.redirect(getAppUrl(request, "/?error=oauth_config"));
+    const body = (await request.json()) as { username?: unknown };
+    username =
+      typeof body.username === "string" ? body.username.trim() : "";
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 }
+    );
   }
+
+  if (!username) {
+    return NextResponse.json(
+      { error: "Username is required" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    await getUserInfo(username);
+  } catch (e) {
+    if (e instanceof LastfmNotFoundError) {
+      return NextResponse.json(
+        {
+          error: `Could not find Last.fm user "${username}". Check the spelling and try again.`,
+        },
+        { status: 404 }
+      );
+    }
+    console.error("[auth/login] Last.fm API error:", e);
+    return NextResponse.json(
+      { error: "Could not connect to Last.fm. Please try again." },
+      { status: 503 }
+    );
+  }
+
+  const response = NextResponse.json({ ok: true });
+  setLastfmSessionCookie(response, username);
+
+  // Best-effort: if the user is Google-authenticated, persist the Last.fm
+  // username in Firestore so it can be recovered on other devices/browsers.
+  const session = await auth().catch(() => null);
+  if (session?.user?.email) {
+    setLastfmUsername(session.user.email, username).catch((err) => {
+      console.warn("[auth/login] Could not persist lastfmUsername:", err);
+    });
+  }
+
+  return response;
 }

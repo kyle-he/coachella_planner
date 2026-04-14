@@ -58,14 +58,14 @@ export async function prewarmDeezerCache() {
     `[deezer-prewarm] Searched ${unique.length} artists, matched ${matched.length} on Deezer.`
   );
 
-  // ── Step 2: Fetch top 50 tracks for each matched artist ────────────
+  // ── Step 2: Fetch top 5 tracks for each matched artist ─────────────
   let tracksFetched = 0;
   for (let i = 0; i < matched.length; i += BATCH) {
     const batch = matched.slice(i, i + BATCH);
     const results = await Promise.all(
       batch.map(async ({ artist }) => {
         try {
-          const data = await getArtistTopTracks(artist.id, 50);
+          const data = await getArtistTopTracks(artist.id, 5);
           return (data.data || []).length;
         } catch {
           return 0;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAppUrl } from "@/lib/spotify";
-import { clearSpotifySessionCookies } from "@/lib/spotify-session";
+import { clearLastfmSessionCookies } from "@/lib/lastfm-session";
+import { auth } from "@/auth";
+import { clearLastfmUsername } from "@/lib/user-profile";
 
 function htmlRedirect(target: string) {
   const escaped = JSON.stringify(target);
@@ -13,8 +14,20 @@ function htmlRedirect(target: string) {
 
 export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next");
-  const target = next?.startsWith("/") ? next : "/?signed_out=1";
-  const response = htmlRedirect(getAppUrl(request, target));
-  clearSpotifySessionCookies(response);
+  const target = next?.startsWith("/") ? next : "/";
+  const response = htmlRedirect(
+    new URL(target, request.nextUrl.origin).toString()
+  );
+  clearLastfmSessionCookies(response);
+
+  // Best-effort: if the user is Google-authenticated, clear the persisted
+  // Last.fm username from Firestore so the link is truly removed.
+  const session = await auth().catch(() => null);
+  if (session?.user?.email) {
+    clearLastfmUsername(session.user.email).catch((err) => {
+      console.warn("[auth/logout] Could not clear lastfmUsername:", err);
+    });
+  }
+
   return response;
 }
