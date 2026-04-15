@@ -31,19 +31,37 @@ async function partyPayload(user: { email: string; name: string; image: string }
     getPartiesForUser(user.email),
     getPartyScheduleVisibility(user.email),
   ]);
-  const partiesWithFreshSelfProfile = parties.map((party) => ({
+
+  const memberEmails = new Set<string>();
+  for (const party of parties) {
+    for (const member of party.members) {
+      memberEmails.add(member.email);
+    }
+  }
+
+  const overrides = new Map<string, { name: string; image: string }>();
+  await Promise.all(
+    [...memberEmails].map(async (email) => {
+      const override = await getUserProfileOverride(email);
+      if (!override) return;
+      overrides.set(email, { name: override.name, image: override.image });
+    })
+  );
+
+  const partiesWithFreshProfiles = parties.map((party) => ({
     ...party,
-    members: party.members.map((member) =>
-      member.email === user.email
-        ? {
-            ...member,
-            name: user.name,
-            image: user.image,
-          }
-        : member
-    ),
+    members: party.members.map((member) => {
+      const override = overrides.get(member.email);
+      if (!override) return member;
+      return {
+        ...member,
+        name: override.name || member.name,
+        image: override.image || member.image,
+      };
+    }),
   }));
-  return { parties: partiesWithFreshSelfProfile, schedulePartyVisible };
+
+  return { parties: partiesWithFreshProfiles, schedulePartyVisible };
 }
 
 // GET — current user's parties + schedule visibility prefs
