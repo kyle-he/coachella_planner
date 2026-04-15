@@ -64,6 +64,24 @@ export default function ProfilePage({
 
   const [showPopularSongs, setShowPopularSongs] = useState(true);
 
+  const applyProfileToLocalPartyMembers = useCallback(
+    (nextName: string, nextImage: string) => {
+      const email = session?.user?.email;
+      if (!email) return;
+      setParties((prev) =>
+        prev.map((party) => ({
+          ...party,
+          members: party.members.map((member) =>
+            member.email === email
+              ? { ...member, name: nextName || member.name, image: nextImage }
+              : member
+          ),
+        }))
+      );
+    },
+    [session?.user?.email]
+  );
+
   const clearJoinQueryParam = useCallback(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -336,6 +354,10 @@ export default function ProfilePage({
   );
 
   const saveProfileValues = useCallback(async (nextName: string, nextImage: string) => {
+    // Optimistic UI: reflect profile updates across local party member chips immediately.
+    setProfileName(nextName);
+    setProfileImage(nextImage);
+    applyProfileToLocalPartyMembers(nextName, nextImage);
     setSavingProfile(true);
     try {
       const res = await fetch("/api/profile", {
@@ -359,7 +381,7 @@ export default function ProfilePage({
     } finally {
       setSavingProfile(false);
     }
-  }, []);
+  }, [applyProfileToLocalPartyMembers]);
 
   const cancelProfileEdit = useCallback(() => {
     setEditingProfile(false);

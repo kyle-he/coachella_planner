@@ -262,6 +262,7 @@ export default function SchedulePage({
     buildPlaceholderRecommendations
   );
   const [recsFetchError, setRecsFetchError] = useState<string | null>(null);
+  const [recsRefreshing, setRecsRefreshing] = useState(false);
   const [showPopularSongs, setShowPopularSongs] = useState(() =>
     typeof window === "undefined" ? true : getShowPopularSongs()
   );
