@@ -26,12 +26,24 @@ async function getUser() {
   };
 }
 
-async function partyPayload(email: string) {
+async function partyPayload(user: { email: string; name: string; image: string }) {
   const [parties, schedulePartyVisible] = await Promise.all([
-    getPartiesForUser(email),
-    getPartyScheduleVisibility(email),
+    getPartiesForUser(user.email),
+    getPartyScheduleVisibility(user.email),
   ]);
-  return { parties, schedulePartyVisible };
+  const partiesWithFreshSelfProfile = parties.map((party) => ({
+    ...party,
+    members: party.members.map((member) =>
+      member.email === user.email
+        ? {
+            ...member,
+            name: user.name,
+            image: user.image,
+          }
+        : member
+    ),
+  }));
+  return { parties: partiesWithFreshSelfProfile, schedulePartyVisible };
 }
 
 // GET — current user's parties + schedule visibility prefs
@@ -39,7 +51,7 @@ export async function GET() {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  return NextResponse.json(await partyPayload(user.email));
+  return NextResponse.json(await partyPayload(user));
 }
 
 // POST — create, join, leave, sync, or setScheduleVisibility
@@ -65,7 +77,7 @@ export async function POST(request: NextRequest) {
     case "create": {
       const partyName = (body.name || "").trim() || `${user.name}'s Party`;
       await createParty(partyName, user);
-      return NextResponse.json(await partyPayload(user.email));
+      return NextResponse.json(await partyPayload(user));
     }
 
     case "join": {
@@ -78,7 +90,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Party not found" }, { status: 404 });
       }
       await joinParty(code, user);
-      return NextResponse.json(await partyPayload(user.email));
+      return NextResponse.json(await partyPayload(user));
     }
 
     case "leave": {
@@ -88,7 +100,7 @@ export async function POST(request: NextRequest) {
       }
       await leaveParty(partyId, user.email);
       await removePartyFromSchedulePrefs(user.email, partyId);
-      return NextResponse.json(await partyPayload(user.email));
+      return NextResponse.json(await partyPayload(user));
     }
 
     case "sync": {
@@ -98,7 +110,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "partyId and plan are required" }, { status: 400 });
       }
       await syncPlan(partyId, user.email, plan);
-      return NextResponse.json(await partyPayload(user.email));
+      return NextResponse.json(await partyPayload(user));
     }
 
     case "setScheduleVisibility": {
