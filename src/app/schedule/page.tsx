@@ -244,6 +244,7 @@ export default function SchedulePage({
   const [schedulePartyVisible, setSchedulePartyVisible] = useState<
     Record<string, boolean>
   >({});
+  const [partyRefreshing, setPartyRefreshing] = useState(false);
   const partySyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const partiesRef = useRef(parties);
   useEffect(() => { partiesRef.current = parties; }, [parties]);
@@ -367,32 +368,15 @@ export default function SchedulePage({
     return () => window.removeEventListener("coachella-prefs-changed", onPrefs);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const refreshRecommendations = useCallback(
+    async (opts?: { showLoading?: boolean }) => {
+      const showLoading = opts?.showLoading === true;
+      if (showLoading) setRecsRefreshing(true);
       try {
-        const raw = window.localStorage.getItem(SCHEDULE_REC_CACHE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as {
-            recommendations?: ArtistRecommendation[];
-          };
-          if (
-            Array.isArray(parsed.recommendations) &&
-            parsed.recommendations.length > 0
-          ) {
-            setRecommendations(parsed.recommendations);
-          }
-        }
-      } catch {
-        /* ignore */
-      }
-
-      try {
-        const res = await fetch("/api/recommendations");
+        const res = await fetch("/api/recommendations", { cache: "no-store" });
         const data = (await res.json()) as {
           recommendations?: ArtistRecommendation[];
         };
-        if (cancelled) return;
         if (res.ok && data.recommendations?.length) {
           setRecommendations(data.recommendations);
           setRecsFetchError(null);
@@ -411,14 +395,52 @@ export default function SchedulePage({
           setRecsFetchError("Could not load artist images and previews");
         }
       } catch {
-        if (!cancelled) {
-          setRecsFetchError("Could not load artist images and previews");
+        setRecsFetchError("Could not load artist images and previews");
+      } finally {
+        if (showLoading) setRecsRefreshing(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(SCHEDULE_REC_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          recommendations?: ArtistRecommendation[];
+        };
+        if (
+          Array.isArray(parsed.recommendations) &&
+          parsed.recommendations.length > 0
+        ) {
+          setRecommendations(parsed.recommendations);
         }
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      /* ignore */
+    }
+    void refreshRecommendations();
+  }, [refreshRecommendations]);
+
+  const fetchParties = useCallback(async (opts?: { showLoading?: boolean }) => {
+    const showLoading = opts?.showLoading === true;
+    if (showLoading) setPartyRefreshing(true);
+    try {
+      const res = await fetch("/api/party", { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          parties?: PartyInfo[];
+          schedulePartyVisible?: Record<string, boolean>;
+        };
+        setParties(data.parties ?? []);
+        setSchedulePartyVisible(data.schedulePartyVisible ?? {});
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      if (showLoading) setPartyRefreshing(false);
+    }
   }, []);
 
   const togglePlanItem = useCallback(
@@ -535,20 +557,6 @@ export default function SchedulePage({
 
   // Fetch parties, poll, and refresh when returning from Profile
   useEffect(() => {
-    let cancelled = false;
-    const fetchParties = async () => {
-      try {
-        const res = await fetch("/api/party");
-        if (res.ok && !cancelled) {
-          const data = (await res.json()) as {
-            parties?: PartyInfo[];
-            schedulePartyVisible?: Record<string, boolean>;
-          };
-          setParties(data.parties ?? []);
-          setSchedulePartyVisible(data.schedulePartyVisible ?? {});
-        }
-      } catch { /* ignore */ }
-    };
     void fetchParties();
     const interval = setInterval(fetchParties, 15_000);
     const onFocus = () => { void fetchParties(); };
@@ -558,12 +566,11 @@ export default function SchedulePage({
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      cancelled = true;
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [fetchParties]);
 
   // Sync own plan to every party whenever it changes
   useEffect(() => {
@@ -1465,13 +1472,23 @@ export default function SchedulePage({
                       : `${userPlanListForDay.recs.length} set${userPlanListForDay.recs.length === 1 ? "" : "s"}, ~${userPlanListForDay.totalWalkMinutes} min (${formatTotalWalkDistance(userPlanListForDay.totalWalkMiles)}) walking between sets`}
                   </span>
                   {userPlanListForDay.recs.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => clearPlanForDay(selectedDay)}
-                      className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2 shrink-0"
-                    >
-                      Clear day
-                    </button>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => void fetchParties({ showLoading: true })}
+                        disabled={partyRefreshing}
+                        className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {partyRefreshing ? "Refreshing..." : "Refresh"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => clearPlanForDay(selectedDay)}
+                        className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
+                      >
+                        Clear day
+                      </button>
+                    </div>
                   )}
                 </div>
                 <ScheduleGridView
