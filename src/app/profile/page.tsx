@@ -59,6 +59,7 @@ export default function ProfilePage({
   const [savingProfile, setSavingProfile] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const profileSeededFromSessionRef = useRef(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -134,13 +135,12 @@ export default function ProfilePage({
   }, []);
 
   useEffect(() => {
-    if (!profileName && session?.user?.name) {
-      setProfileName(session.user.name);
-    }
-    if (!profileImage && session?.user?.image) {
-      setProfileImage(session.user.image);
-    }
-  }, [session?.user?.name, session?.user?.image, profileName, profileImage]);
+    if (profileSeededFromSessionRef.current) return;
+    if (!session?.user) return;
+    setProfileName((prev) => prev || session.user?.name || "");
+    setProfileImage((prev) => prev || session.user?.image || "");
+    profileSeededFromSessionRef.current = true;
+  }, [session?.user]);
 
   useEffect(() => {
     (async () => {

@@ -1,4 +1,4 @@
-import { getDoc, setDoc } from "@/lib/firestore-rest";
+import { getDoc, runQuery, setDoc, updateDoc } from "@/lib/firestore-rest";
 
 export interface UserProfileOverride {
   name: string;
@@ -32,5 +32,25 @@ export async function upsertUserProfileOverride(
     image: payload.image,
     updatedAt: payload.updatedAt,
   });
+
+  // Keep party member snapshots in sync so avatar/name updates are visible
+  // across schedule stacks and member lists without waiting for re-joins.
+  const membershipDocs = await runQuery({
+    collection: "members",
+    allDescendants: true,
+    filters: [{ field: "email", op: "EQUAL", value: email }],
+  });
+  const updates = membershipDocs.map((doc) =>
+    updateDoc(doc.path, {
+      name: payload.name,
+      image: payload.image,
+    })
+  );
+  const results = await Promise.allSettled(updates);
+  const failed = results.filter((r) => r.status === "rejected").length;
+  if (failed > 0) {
+    console.warn(`[profile] Failed to update ${failed} party member profile(s)`);
+  }
+
   return payload;
 }

@@ -1441,11 +1441,9 @@ export default function SchedulePage({
                 type="button"
                 onClick={() => void fetchParties({ showLoading: true })}
                 disabled={partyRefreshing}
-                aria-label="Refresh party updates"
-                title="Refresh party updates"
-                className="inline-flex h-6 w-6 items-center justify-center rounded text-[14px] text-muted/70 transition-colors hover:text-foreground hover:bg-[var(--hover-wash)] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
-                ↻
+                {partyRefreshing ? "Refreshing..." : "Refresh"}
               </button>
             </div>
 
@@ -1496,11 +1494,9 @@ export default function SchedulePage({
                         type="button"
                         onClick={() => void fetchParties({ showLoading: true })}
                         disabled={partyRefreshing}
-                        aria-label="Refresh party updates"
-                        title="Refresh party updates"
-                        className="inline-flex h-6 w-6 items-center justify-center rounded text-[14px] text-muted/70 transition-colors hover:text-foreground hover:bg-[var(--hover-wash)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {partyRefreshing ? "…" : "↻"}
+                        {partyRefreshing ? "Refreshing..." : "Refresh"}
                       </button>
                       {userPlanListForDay.recs.length > 0 && (
                       <button
