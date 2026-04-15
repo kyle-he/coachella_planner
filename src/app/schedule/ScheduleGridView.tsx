@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useCallback, useMemo } from "react";
-import { AvatarImage } from "@/components/AvatarImage";
 import { STAGES, type Stage } from "@/lib/coachella-data";
 
 /** Minutes from midnight; supports festival “25:00” style times */
@@ -469,15 +468,14 @@ export const PartyMemberAvatarStack = memo(function PartyMemberAvatarStack({
   return (
     <div className="flex items-center -space-x-1.5" onClick={(e) => e.stopPropagation()}>
       {shown.map((m, i) => (
-        <AvatarImage
-          key={`${m.name}-${i}`}
+        <img
+          key={i}
           src={m.image}
           alt={m.name}
-          name={m.name}
-          className="h-4 w-4"
-          sizes="16px"
+          title={m.name}
+          className="h-4 w-4 rounded-full object-cover"
           style={{ zIndex: i }}
-          fallbackClassName="text-[8px] font-bold text-muted/45"
+          referrerPolicy="no-referrer"
         />
       ))}
       {overflow > 0 && (

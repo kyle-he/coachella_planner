@@ -32,7 +32,6 @@ import {
   getShowPopularSongs,
 } from "@/lib/schedule-preferences";
 import { hapticNudge, hapticSuccess } from "@/lib/haptics";
-import { AvatarImage } from "@/components/AvatarImage";
 
 /** Cached Deezer enrichments from `/api/recommendations` (images + previews). */
 const SCHEDULE_REC_CACHE_KEY = "coachella:scheduleRecommendations:v1";
@@ -1085,14 +1084,11 @@ export default function SchedulePage({
             />
 
             {rec.artist?.image ? (
-              <AvatarImage
+              <img
                 src={rec.artist.image}
                 alt=""
-                name={displayName}
-                variant="blob"
-                className="h-10 w-10"
-                sizes="40px"
-                fallbackClassName="font-display text-sm font-bold text-muted/45"
+                className="h-10 w-10 shrink-0 object-cover scratch-blob"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="flex h-10 w-10 shrink-0 items-center justify-center scratch-blob bg-[var(--hover-wash-strong)] font-display text-sm font-bold text-muted">
@@ -1176,14 +1172,11 @@ export default function SchedulePage({
                         className="flex min-w-0 items-center gap-2.5"
                       >
                         {m.image ? (
-                          <AvatarImage
+                          <img
                             src={m.image}
                             alt=""
-                            name={m.name}
-                            className="h-7 w-7"
-                            sizes="28px"
-                            ringClassName="ring-1 ring-border/40"
-                            fallbackClassName="text-[11px] font-bold text-muted/45"
+                            className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-border/40"
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--hover-wash-strong)] text-[12px] font-bold text-muted">
@@ -1348,14 +1341,11 @@ export default function SchedulePage({
                   className="flex items-center gap-2 font-display text-[13px] font-medium text-[var(--cream)] hover:text-white transition-colors drop-shadow-[0_1px_2px_color-mix(in_srgb,var(--teal)_35%,transparent)]"
                 >
                   {headerImage && (
-                    <AvatarImage
+                    <img
                       src={headerImage}
                       alt=""
-                      name={headerName}
-                      className="h-5 w-5"
-                      sizes="20px"
-                      priority
-                      fallbackClassName="text-[9px] font-bold text-muted/45"
+                      className="h-5 w-5 shrink-0 rounded-full object-cover"
+                      referrerPolicy="no-referrer"
                     />
                   )}
                   <span>{headerName}</span>
@@ -1586,14 +1576,11 @@ export default function SchedulePage({
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/30 px-4 py-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               {gridSelectedArtistRec.artist?.image ? (
-                <AvatarImage
+                <img
                   src={gridSelectedArtistRec.artist.image}
                   alt=""
-                  name={gridSelectedArtistRec.setTime.artist.name}
-                  variant="blob"
-                  className="h-10 w-10"
-                  sizes="40px"
-                  fallbackClassName="font-display text-sm font-bold text-muted/45"
+                  className="h-10 w-10 shrink-0 object-cover scratch-blob"
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <div
@@ -1650,14 +1637,11 @@ export default function SchedulePage({
                     {goingToThisSet.map((m) => (
                       <li key={m.email} className="flex min-w-0 items-center gap-2.5">
                         {m.image ? (
-                          <AvatarImage
+                          <img
                             src={m.image}
                             alt=""
-                            name={m.name}
-                            className="h-7 w-7"
-                            sizes="28px"
-                            ringClassName="ring-1 ring-border/40"
-                            fallbackClassName="text-[11px] font-bold text-muted/45"
+                            className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-border/40"
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--hover-wash-strong)] text-[12px] font-bold text-muted">
