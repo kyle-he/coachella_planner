@@ -480,14 +480,14 @@ export const PartyMemberAvatarStack = memo(function PartyMemberAvatarStack({
       ))}
       {overflow > 0 && (
         <span
-          className={`ml-1 inline-flex items-center text-[11px] leading-none ${
+          className={`ml-2 inline-flex items-center text-[11px] leading-none ${
             inPlan
               ? "text-[color-mix(in_srgb,var(--cream)_78%,transparent)]"
               : "text-muted"
           }`}
           style={{ zIndex: 0 }}
         >
-          +{overflow} more
+          +{overflow}
         </span>
       )}
     </div>
