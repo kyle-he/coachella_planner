@@ -9,6 +9,7 @@ import {
   getShowPopularSongs,
   setShowPopularSongsPreference,
 } from "@/lib/schedule-preferences";
+import { AvatarImage } from "@/components/AvatarImage";
 import { hapticNudge, hapticSuccess, hapticToast } from "@/lib/haptics";
 
 interface PartyMember {
@@ -576,11 +577,14 @@ export default function ProfilePage({
                   }`}
                 >
                   {shownImage ? (
-                    <img
+                    <AvatarImage
                       src={shownImage}
                       alt=""
-                      className="h-full w-full object-cover"
-                      referrerPolicy="no-referrer"
+                      name={shownName}
+                      className="block h-full w-full"
+                      sizes="72px"
+                      priority
+                      fallbackClassName="font-display text-2xl font-bold text-muted/45"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-[var(--hover-wash-strong)] font-display text-2xl font-bold text-muted">
@@ -821,11 +825,13 @@ export default function ProfilePage({
                       {party.members.map((m) => (
                         <div key={m.email} className="flex items-center gap-2.5">
                           {m.image ? (
-                            <img
+                            <AvatarImage
                               src={m.image}
                               alt=""
-                              className="h-7 w-7 rounded-full object-cover"
-                              referrerPolicy="no-referrer"
+                              name={m.name}
+                              className="h-7 w-7"
+                              sizes="28px"
+                              fallbackClassName="text-[11px] font-bold text-muted/45"
                             />
                           ) : (
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--hover-wash-strong)] text-[12px] font-bold text-muted">
