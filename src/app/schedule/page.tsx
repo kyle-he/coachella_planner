@@ -896,11 +896,20 @@ export default function SchedulePage({
   const setExpandedArtistSafely = useCallback(
     (next: string | null) => {
       if (playingTrackKey !== null) stopPlayback();
-      startTransition(() => {
-        setExpandedArtist(next);
-      });
+      setExpandedArtist(next);
     },
     [stopPlayback, playingTrackKey]
+  );
+
+  const onGridSelect = useCallback(
+    (rowKey: string | null) => {
+      if (rowKey === null) {
+        setExpandedArtistSafely(null);
+        return;
+      }
+      setExpandedArtistSafely(expandedArtist === rowKey ? null : rowKey);
+    },
+    [expandedArtist, setExpandedArtistSafely]
   );
 
   useEffect(() => {
@@ -1421,13 +1430,23 @@ export default function SchedulePage({
         {scheduleLayoutEffective === "list" ? (
           <div className="flex flex-1 flex-col">
             <div
-              className={`flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/40 bg-[var(--schedule-toolbar-wash)] px-5 py-3 text-[13px] text-muted`}
+              className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border/40 bg-[var(--schedule-toolbar-wash)] px-5 py-3 text-[13px] text-muted`}
             >
               <span
                 title={`Path distances are approximate; time assumes ~${FESTIVAL_WALK_MPH} mph festival walking pace.`}
               >
                 {`~${userPlanListForDay.totalWalkMinutes} min (${formatTotalWalkDistance(userPlanListForDay.totalWalkMiles)}) between sets`}
               </span>
+              <button
+                type="button"
+                onClick={() => void fetchParties({ showLoading: true })}
+                disabled={partyRefreshing}
+                aria-label="Refresh party updates"
+                title="Refresh party updates"
+                className="inline-flex h-6 w-6 items-center justify-center rounded text-[14px] text-muted/70 transition-colors hover:text-foreground hover:bg-[var(--hover-wash)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                ↻
+              </button>
             </div>
 
             {userPlanListForDay.recs.length === 0 ? (
@@ -1472,16 +1491,18 @@ export default function SchedulePage({
                       ? "Nothing in your plan yet — tap + to add sets"
                       : `${userPlanListForDay.recs.length} set${userPlanListForDay.recs.length === 1 ? "" : "s"}, ~${userPlanListForDay.totalWalkMinutes} min (${formatTotalWalkDistance(userPlanListForDay.totalWalkMiles)}) walking between sets`}
                   </span>
-                  {userPlanListForDay.recs.length > 0 && (
-                    <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
                       <button
                         type="button"
                         onClick={() => void fetchParties({ showLoading: true })}
                         disabled={partyRefreshing}
-                        className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Refresh party updates"
+                        title="Refresh party updates"
+                        className="inline-flex h-6 w-6 items-center justify-center rounded text-[14px] text-muted/70 transition-colors hover:text-foreground hover:bg-[var(--hover-wash)] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {partyRefreshing ? "Refreshing..." : "Refresh"}
+                        {partyRefreshing ? "…" : "↻"}
                       </button>
+                      {userPlanListForDay.recs.length > 0 && (
                       <button
                         type="button"
                         onClick={() => clearPlanForDay(selectedDay)}
@@ -1489,15 +1510,15 @@ export default function SchedulePage({
                       >
                         Clear day
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 <ScheduleGridView
                   fillViewport
                   items={gridItems}
                   stageColors={STAGE_COLORS}
                   expandedKey={expandedArtist}
-                  onSelect={setExpandedArtistSafely}
+                  onSelect={onGridSelect}
                   editable
                   onTogglePlan={handleGridTogglePlan}
                 />

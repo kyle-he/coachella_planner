@@ -69,9 +69,9 @@ interface ScheduleGridViewProps {
 const TIME_GUTTER_PX = 52;
 /** Vertical scale: minutes → pixels (readable on phone, scrolls for long days; 1.5× for room for avatars) */
 const MINUTES_PER_PX = 1.824 * 1.5;
-const GRID_MIN_WIDTH_PX = 1100;
+const GRID_MIN_WIDTH_PX = 1000;
 /** Min width per stage column (×7 stages + gutter sets scroll width) */
-const STAGE_COL_MIN_PX = 156;
+const STAGE_COL_MIN_PX = 140;
 
 type GridCellProps = {
   item: ScheduleGridItem;
@@ -198,9 +198,9 @@ export const ScheduleGridView = memo(function ScheduleGridView({
 }: ScheduleGridViewProps) {
   const handleCellClick = useCallback(
     (rowKey: string) => {
-      onSelect(expandedKey === rowKey ? null : rowKey);
+      onSelect(rowKey);
     },
-    [expandedKey, onSelect]
+    [onSelect]
   );
 
   const { dayStartMin, dayEndMin, heightPx, byStage } = useMemo(() => {
