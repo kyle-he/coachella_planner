@@ -537,7 +537,7 @@ export default function ProfilePage({
             }`}
           >
             <div className="flex gap-4 sm:gap-5">
-              <div className="flex shrink-0 flex-col items-center gap-0 sm:items-start">
+              <div className="flex shrink-0 flex-col items-center gap-0 sm:items-center">
                 <div
                   className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden rounded-full ${
                     editingProfile ? "ring-1 ring-border/50" : ""
