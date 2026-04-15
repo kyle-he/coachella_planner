@@ -1,0 +1,31 @@
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: FIREBASE_PROJECT_ID
+    value: coachellaplanner
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_APP_URL
+    value: https://coachella.kylehe.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXTAUTH_URL
+    value: https://coachella.kylehe.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: AUTH_SECRET
+    secret: auth-secret
+  - variable: AUTH_GOOGLE_ID
+    secret: auth-google-id
+  - variable: AUTH_GOOGLE_SECRET
+    secret: auth-google-secret
+  - variable: LASTFM_API_KEY
+    secret: lastfm-api-key

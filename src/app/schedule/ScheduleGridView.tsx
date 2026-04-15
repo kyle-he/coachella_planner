@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { STAGES, type Stage } from "@/lib/coachella-data";
 
 /** Minutes from midnight; supports festival “25:00” style times */
@@ -68,12 +68,126 @@ interface ScheduleGridViewProps {
 /** Narrow rail: compact “7PM” labels read larger than old “7:00 PM” strings */
 const TIME_GUTTER_PX = 52;
 /** Vertical scale: minutes → pixels (readable on phone, scrolls for long days; 1.5× for room for avatars) */
-const MINUTES_PER_PX = 1.52 * 1.5;
-const GRID_MIN_WIDTH_PX = 920;
+const MINUTES_PER_PX = 1.824 * 1.5;
+const GRID_MIN_WIDTH_PX = 1100;
 /** Min width per stage column (×7 stages + gutter sets scroll width) */
-const STAGE_COL_MIN_PX = 124;
+const STAGE_COL_MIN_PX = 156;
 
-export function ScheduleGridView({
+type GridCellProps = {
+  item: ScheduleGridItem;
+  stage: string;
+  stageColor: string;
+  topPct: number;
+  heightPct: number;
+  isSelected: boolean;
+  editable: boolean;
+  onCellClick: (rowKey: string) => void;
+  onTogglePlan?: (rowKey: string, currentlyInPlan: boolean) => void;
+};
+
+const ScheduleGridCell = memo(function ScheduleGridCell({
+  item,
+  stage,
+  stageColor,
+  topPct,
+  heightPct,
+  isSelected,
+  editable,
+  onCellClick,
+  onTogglePlan,
+}: GridCellProps) {
+  const rec = item.recommendation;
+  const rowKey = item.rowKey;
+  const inPlan = item.inPlan === true;
+  const durationMinutes =
+    timeToMinutes(rec.setTime.endTime) - timeToMinutes(rec.setTime.startTime);
+  const nameClampClass = durationMinutes < 35 ? "line-clamp-1" : "line-clamp-3";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onCellClick(rowKey)}
+      className={`absolute inset-x-0.5 flex flex-col overflow-hidden rounded text-left transition-[border-color,background-color,box-shadow] duration-200 ease-out ${
+        inPlan
+          ? isSelected
+            ? "z-20 border border-[var(--teal)] ring-1 ring-[var(--teal)] shadow-[0_2px_8px_rgba(0,64,79,0.28)]"
+            : "z-10 border border-border/55 hover:border-border hover:brightness-[1.03]"
+          : isSelected
+            ? "z-20 border border-[var(--teal)] bg-[var(--expand-wash)] ring-1 ring-[var(--teal)] shadow-[0_2px_8px_rgba(0,64,79,0.28)]"
+            : "z-10 border border-dashed border-border/50 bg-[var(--hover-wash)] shadow-[0_1px_2px_rgba(12,31,36,0.14)] hover:bg-[var(--hover-wash-strong)] hover:shadow-[0_1px_2px_rgba(12,31,36,0.18)]"
+      }`}
+      style={{
+        top: `${topPct}%`,
+        height: `${heightPct}%`,
+        minHeight: 60,
+        ...(inPlan ? { backgroundColor: stageColor } : {}),
+      }}
+      aria-expanded={isSelected}
+      aria-label={`${rec.setTime.artist.name} at ${formatTimeShort(rec.setTime.startTime)} on ${stage}${inPlan ? " — in your plan" : ""}`}
+    >
+      {editable && onTogglePlan && (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label={inPlan ? "Remove from plan" : "Add to plan"}
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePlan(rowKey, inPlan);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.stopPropagation();
+              e.preventDefault();
+              onTogglePlan(rowKey, inPlan);
+            }
+          }}
+          className={`absolute top-1 right-1 z-30 flex h-6 w-6 items-center justify-center text-[17px] font-bold leading-none transition-opacity ${
+            inPlan
+              ? "text-[var(--cream)] opacity-60 hover:opacity-100"
+              : "text-muted opacity-50 hover:opacity-100 hover:text-foreground"
+          }`}
+        >
+          {inPlan ? "×" : "+"}
+        </span>
+      )}
+      {!inPlan && (
+        <span
+          className="h-0.5 w-full shrink-0"
+          style={{ backgroundColor: stageColor }}
+          aria-hidden
+        />
+      )}
+      <div className="flex min-h-0 flex-1 flex-col items-start gap-0.5 px-2 pt-1.5 pb-0 pr-8">
+        <span
+          className={`${nameClampClass} min-w-0 text-[12px] leading-snug sm:text-xs ${
+            inPlan
+              ? "font-semibold text-[var(--cream)]"
+              : "font-semibold text-muted"
+          }`}
+        >
+          {rec.setTime.artist.name}
+        </span>
+      </div>
+      <div className="mt-auto flex flex-col gap-1.5 px-2 pb-1.5">
+        {item.partyMembers && item.partyMembers.length > 0 && (
+          <PartyMemberAvatarStack members={item.partyMembers} inPlan={inPlan} />
+        )}
+        <span
+          className={`text-[10px] tabular-nums sm:text-[11px] ${
+            inPlan
+              ? "text-[color-mix(in_srgb,var(--cream)_78%,transparent)]"
+              : "text-muted/80"
+          }`}
+        >
+          {formatTimeShort(rec.setTime.startTime)} –{" "}
+          {formatTimeShort(rec.setTime.endTime)}
+        </span>
+      </div>
+    </button>
+  );
+});
+
+export const ScheduleGridView = memo(function ScheduleGridView({
   items,
   stageColors,
   expandedKey,
@@ -86,10 +200,10 @@ export function ScheduleGridView({
     (rowKey: string) => {
       onSelect(expandedKey === rowKey ? null : rowKey);
     },
-    [onSelect, expandedKey]
+    [expandedKey, onSelect]
   );
 
-  const { dayStartMin, dayEndMin, heightPx, byStage } = (() => {
+  const { dayStartMin, dayEndMin, heightPx, byStage } = useMemo(() => {
     if (items.length === 0) {
       return {
         dayStartMin: 13 * 60,
@@ -109,21 +223,26 @@ export function ScheduleGridView({
     }
 
     const padM = 20;
-    const dayStartMin = minM - padM;
-    const dayEndMin = maxM + padM;
-    const totalM = Math.max(dayEndMin - dayStartMin, 60);
+    const nextDayStartMin = minM - padM;
+    const nextDayEndMin = maxM + padM;
+    const totalM = Math.max(nextDayEndMin - nextDayStartMin, 60);
     const rawHeight = Math.max(totalM * MINUTES_PER_PX, 480);
-    const heightPx = fillViewport ? rawHeight : Math.min(rawHeight, 8400);
+    const nextHeightPx = fillViewport ? rawHeight : Math.min(rawHeight, 8400);
 
-    const byStage = new Map<Stage, ScheduleGridItem[]>();
-    for (const s of STAGES) byStage.set(s, []);
+    const nextByStage = new Map<Stage, ScheduleGridItem[]>();
+    for (const s of STAGES) nextByStage.set(s, []);
     for (const item of items) {
       const st = item.recommendation.setTime.stage as Stage;
-      if (byStage.has(st)) byStage.get(st)!.push(item);
+      if (nextByStage.has(st)) nextByStage.get(st)!.push(item);
     }
 
-    return { dayStartMin, dayEndMin, heightPx, byStage };
-  })();
+    return {
+      dayStartMin: nextDayStartMin,
+      dayEndMin: nextDayEndMin,
+      heightPx: nextHeightPx,
+      byStage: nextByStage,
+    };
+  }, [fillViewport, items]);
 
   const scrollClass = fillViewport
     ? "min-h-0 flex-1 overflow-auto overscroll-contain [overscroll-behavior:contain] [-webkit-overflow-scrolling:touch]"
@@ -131,25 +250,31 @@ export function ScheduleGridView({
 
   const totalM = dayEndMin - dayStartMin;
 
-  const hourTicks: number[] = [];
-  const startHour = Math.floor(dayStartMin / 60);
-  const endHour = Math.ceil(dayEndMin / 60);
-  for (let h = startHour; h <= endHour; h++) {
-    const tickMin = h * 60;
-    if (tickMin >= dayStartMin - 1 && tickMin <= dayEndMin + 1) {
-      hourTicks.push(tickMin);
+  const hourTicks = useMemo(() => {
+    const ticks: number[] = [];
+    const startHour = Math.floor(dayStartMin / 60);
+    const endHour = Math.ceil(dayEndMin / 60);
+    for (let h = startHour; h <= endHour; h++) {
+      const tickMin = h * 60;
+      if (tickMin >= dayStartMin - 1 && tickMin <= dayEndMin + 1) {
+        ticks.push(tickMin);
+      }
     }
-  }
+    return ticks;
+  }, [dayEndMin, dayStartMin]);
 
   /** :30 marks only (hour lines are drawn separately) */
-  const halfHourTicks: number[] = [];
-  let hm = Math.ceil(dayStartMin / 30) * 30;
-  while (hm <= dayEndMin) {
-    if (hm % 60 !== 0) {
-      halfHourTicks.push(hm);
+  const halfHourTicks = useMemo(() => {
+    const ticks: number[] = [];
+    let hm = Math.ceil(dayStartMin / 30) * 30;
+    while (hm <= dayEndMin) {
+      if (hm % 60 !== 0) {
+        ticks.push(hm);
+      }
+      hm += 30;
     }
-    hm += 30;
-  }
+    return ticks;
+  }, [dayEndMin, dayStartMin]);
 
   function pctFromMin(m: number) {
     return ((m - dayStartMin) / totalM) * 100;
@@ -185,22 +310,44 @@ export function ScheduleGridView({
           }}
         >
           {/* One sticky wrapper for the whole header row — sticky on each flex-1 cell breaks under 2D scroll in some browsers */}
-          <div className="sticky top-0 z-50 w-full shrink-0 bg-background">
-            <div className="flex w-full border-b border-border/50">
+          <div
+            className="sticky top-0 z-50 w-full shrink-0 isolate"
+            style={{ backgroundColor: "var(--schedule-content-bg)" }}
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 -z-10"
+              style={{ backgroundColor: "var(--schedule-content-bg)" }}
+            />
+            <div
+              className="relative flex w-full border-b border-border/50"
+              style={{ backgroundColor: "var(--schedule-content-bg)" }}
+            >
               <div
-                className="sticky left-0 z-[60] shrink-0 border-r border-border/50 bg-background px-1 py-2"
-                style={{ width: TIME_GUTTER_PX, minWidth: TIME_GUTTER_PX }}
-              />
+                className="sticky left-0 z-[60] shrink-0 border-r border-border/50 px-1 py-2 isolate"
+                style={{
+                  width: TIME_GUTTER_PX,
+                  minWidth: TIME_GUTTER_PX,
+                  backgroundColor: "var(--schedule-content-bg)",
+                }}
+              >
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 -z-10"
+                  style={{ backgroundColor: "var(--schedule-content-bg)" }}
+                />
+              </div>
               {STAGES.map((stage, i) => (
                 <div
                   key={stage}
                   className={
                     i > 0
-                      ? "min-w-[124px] flex-1 border-l border-border/50 bg-background px-1.5 py-2.5 text-center"
-                      : "min-w-[124px] flex-1 bg-background px-1.5 py-2.5 text-center"
+                      ? "relative flex-1 border-l border-border/50 bg-[var(--schedule-content-bg)] px-1.5 py-2.5 text-center"
+                      : "relative flex-1 bg-[var(--schedule-content-bg)] px-1.5 py-2.5 text-center"
                   }
+                  style={{ minWidth: STAGE_COL_MIN_PX }}
                 >
-                  <span className="inline-block text-xs font-medium leading-tight text-muted sm:text-sm">
+                  <span className="block text-xs font-normal leading-tight text-foreground sm:text-sm">
                     {stage}
                   </span>
                 </div>
@@ -211,13 +358,19 @@ export function ScheduleGridView({
           {/* Body: time rail + stage columns */}
           <div className="flex w-full">
             <div
-              className="sticky left-0 z-[35] shrink-0 border-r border-border/50 bg-background"
+              className="sticky left-0 z-[35] shrink-0 border-r border-border/50 isolate"
               style={{
                 width: TIME_GUTTER_PX,
                 minWidth: TIME_GUTTER_PX,
                 height: heightPx,
+                backgroundColor: "var(--schedule-content-bg)",
               }}
             >
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 -z-10"
+                style={{ backgroundColor: "var(--schedule-content-bg)" }}
+              />
               {hourTicks.map((tickMin) => {
                 const pct = pctFromMin(tickMin);
                 return (
@@ -242,10 +395,10 @@ export function ScheduleGridView({
                 key={stage}
                 className={
                   i > 0
-                    ? "relative min-w-[124px] flex-1 border-l border-border/50"
-                    : "relative min-w-[124px] flex-1"
+                    ? "relative flex-1 border-l border-border/50 bg-[var(--schedule-content-bg)]"
+                    : "relative flex-1 bg-[var(--schedule-content-bg)]"
                 }
-                style={{ height: heightPx }}
+                style={{ height: heightPx, minWidth: STAGE_COL_MIN_PX }}
               >
                 {/* Full-hour guides */}
                 {hourTicks.map((tickMin) => (
@@ -272,94 +425,21 @@ export function ScheduleGridView({
                   const h = Math.max(pctFromMin(endM) - top, 2.5);
                   const rowKey = item.rowKey;
                   const stageColor = stageColors[rec.setTime.stage] || "#888888";
-                  const isOn = expandedKey === rowKey;
-                  const inPlan = item.inPlan === true;
+                  const isSelected = expandedKey === rowKey;
 
                   return (
-                    <button
+                    <ScheduleGridCell
                       key={rowKey}
-                      type="button"
-                      onClick={() => handleCellClick(rowKey)}
-                      className={`absolute inset-x-0.5 flex flex-col overflow-hidden rounded text-left transition-[border-color,background-color,filter,box-shadow] duration-200 ease-out ${
-                        inPlan
-                          ? isOn
-                            ? "z-20 border border-[color-mix(in_srgb,var(--cream)_40%,transparent)] shadow-[inset_0_0_0_2px_var(--cream)]"
-                            : "z-10 border border-[color-mix(in_srgb,var(--cream)_22%,transparent)] hover:border-[color-mix(in_srgb,var(--cream)_32%,transparent)] hover:brightness-[1.08]"
-                          : isOn
-                            ? "z-20 border border-cyan/50 bg-[var(--expand-wash)] ring-1 ring-cyan/30"
-                            : "z-10 border border-dashed border-border/50 bg-[var(--hover-wash)] shadow-[0_1px_2px_rgba(12,31,36,0.14)] hover:bg-[var(--hover-wash-strong)] hover:shadow-[0_1px_2px_rgba(12,31,36,0.18)]"
-                      }`}
-                      style={{
-                        top: `${top}%`,
-                        height: `${h}%`,
-                        minHeight: 60,
-                        ...(inPlan ? { backgroundColor: stageColor } : {}),
-                      }}
-                      aria-expanded={isOn}
-                      aria-label={`${rec.setTime.artist.name} at ${formatTimeShort(rec.setTime.startTime)} on ${stage}${inPlan ? " — in your plan" : ""}`}
-                    >
-                      {editable && onTogglePlan && (
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          aria-label={inPlan ? "Remove from plan" : "Add to plan"}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onTogglePlan(rowKey, inPlan);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              onTogglePlan(rowKey, inPlan);
-                            }
-                          }}
-                          className={`absolute bottom-1 right-1 z-30 flex h-5 w-5 items-center justify-center text-[14px] font-bold leading-none transition-opacity ${
-                            inPlan
-                              ? "text-[var(--cream)] opacity-60 hover:opacity-100"
-                              : "text-muted opacity-50 hover:opacity-100 hover:text-foreground"
-                          }`}
-                        >
-                          {inPlan ? "×" : "+"}
-                        </span>
-                      )}
-                      {!inPlan && (
-                        <span
-                          className="h-0.5 w-full shrink-0"
-                          style={{ backgroundColor: stageColor }}
-                          aria-hidden
-                        />
-                      )}
-                      <div className="flex min-h-0 flex-1 flex-col items-start gap-0.5 px-2 pt-1.5 pb-0">
-                        <span
-                          className={`line-clamp-3 min-w-0 text-[12px] leading-snug sm:text-xs ${
-                            inPlan
-                              ? "font-semibold text-[var(--cream)]"
-                              : "font-semibold text-muted"
-                          }`}
-                        >
-                          {rec.setTime.artist.name}
-                        </span>
-                      </div>
-                      <div className="mt-auto flex flex-col gap-1.5 px-2 pb-1.5">
-                        {item.partyMembers && item.partyMembers.length > 0 && (
-                          <PartyMemberAvatarStack
-                            members={item.partyMembers}
-                            inPlan={inPlan}
-                          />
-                        )}
-                        <span
-                          className={`text-[10px] tabular-nums sm:text-[11px] ${
-                            inPlan
-                              ? "text-[color-mix(in_srgb,var(--cream)_78%,transparent)]"
-                              : "text-muted/80"
-                          }`}
-                        >
-                          {formatTimeShort(rec.setTime.startTime)} –{" "}
-                          {formatTimeShort(rec.setTime.endTime)}
-                        </span>
-                      </div>
-                    </button>
+                      item={item}
+                      stage={stage}
+                      stageColor={stageColor}
+                      topPct={top}
+                      heightPct={h}
+                      isSelected={isSelected}
+                      editable={editable}
+                      onCellClick={handleCellClick}
+                      onTogglePlan={onTogglePlan}
+                    />
                   );
                 })}
               </div>
@@ -369,13 +449,13 @@ export function ScheduleGridView({
       </div>
     </div>
   );
-}
+});
 
 /** Visible faces before +X (matches list view). */
 export const PARTY_MEMBER_STACK_MAX = 5;
 
 /** Stacked party PFPs for grid cells and list rows. */
-export function PartyMemberAvatarStack({
+export const PartyMemberAvatarStack = memo(function PartyMemberAvatarStack({
   members,
   inPlan,
 }: {
@@ -412,4 +492,4 @@ export function PartyMemberAvatarStack({
       )}
     </div>
   );
-}
+});

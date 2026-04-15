@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef, useCallback, useMemo, use } from "react";
+import {
+  startTransition,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  use,
+} from "react";
 import { useSession } from "next-auth/react";
 import { DAYS, STAGES, SCHEDULE, type Stage } from "@/lib/coachella-data";
 import {
@@ -16,20 +24,57 @@ import {
   PartyMemberAvatarStack,
   type ScheduleGridItem,
 } from "@/app/schedule/ScheduleGridView";
+import type {
+  ArtistRecommendation,
+  TrackInfo,
+} from "@/lib/recommendation-types";
+import {
+  getShowPopularSongs,
+} from "@/lib/schedule-preferences";
 
-// ── Types ────────────────────────────────────────────────────────────
+/** Cached Deezer enrichments from `/api/recommendations` (images + previews). */
+const SCHEDULE_REC_CACHE_KEY = "coachella:scheduleRecommendations:v1";
 
-interface SetTime {
-  artist: { name: string; spotifyName?: string };
-  stage: string;
-  day: "friday" | "saturday" | "sunday";
-  dayLabel: string;
-  startTime: string;
-  endTime: string;
+function buildPlaceholderRecommendations(): ArtistRecommendation[] {
+  return SCHEDULE.map((st) => ({
+    setTime: st,
+    artist: null,
+    topTracks: [],
+  }));
 }
 
-/** Thin wrapper so downstream code referencing rec.setTime keeps working */
-type ArtistRecommendation = { setTime: SetTime };
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function TrackPlayToggleIcon({ playing }: { playing: boolean }) {
+  if (playing) {
+    return (
+      <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+        <rect x="6" y="5" width="4" height="14" rx="1" />
+        <rect x="14" y="5" width="4" height="14" rx="1" />
+      </svg>
+    );
+  }
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
+function PlayingBars({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <span className="inline-flex h-3.5 items-end gap-[2px] text-[var(--teal)]" aria-hidden>
+      <span className="eq-bar" />
+      <span className="eq-bar" />
+      <span className="eq-bar" />
+    </span>
+  );
+}
 
 // ── Stage colors (Coachella multi-color palette) ─────────────────────
 
@@ -41,6 +86,10 @@ const STAGE_COLORS: Record<string, string> = {
   Mojave: "#8b6a4a",
   Sahara: "#4a6b8c",
   Yuma: "#2a5560",
+  Quasar: "#6a3d8b",
+  "Do LaB": "#8a4a7b",
+  "Heineken House": "#2f6b3d",
+  "The Bunker": "#525252",
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -51,20 +100,6 @@ function formatTime(time24: string): string {
   const ampm = hour >= 12 && hour < 24 ? "PM" : "AM";
   const display = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
   return `${display}:${m.toString().padStart(2, "0")} ${ampm}`;
-}
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function setsOverlap(a: SetTime, b: SetTime): boolean {
-  if (a.day !== b.day) return false;
-  const aStart = timeToMinutes(a.startTime);
-  const aEnd = timeToMinutes(a.endTime);
-  const bStart = timeToMinutes(b.startTime);
-  const bEnd = timeToMinutes(b.endTime);
-  return aStart < bEnd && bStart < aEnd;
 }
 
 /** Stable identity key for matching a set to a stored plan entry */
@@ -80,17 +115,20 @@ type ScheduleLayout = "list" | "grid";
 type DayFilter = "friday" | "saturday" | "sunday";
 
 /** v2 stores { plan: {...}, savedAt: <epoch> } so timestamps can be compared with DB */
-const USER_PLAN_KEY = "coachella:userplan:v2";
-const USER_PLAN_LEGACY_KEY = "coachella:userplan:v1";
+const USER_PLAN_KEY_PREFIX = "coachella:userplan:v3";
 
 interface LocalPlanPayload {
   plan: Partial<Record<DayFilter, string[]>>;
   savedAt: number;
 }
 
-function getLocalPlanSavedAt(): number {
+function getUserPlanStorageKey(email: string): string {
+  return `${USER_PLAN_KEY_PREFIX}:${email.trim().toLowerCase()}`;
+}
+
+function getLocalPlanSavedAt(email: string): number {
   try {
-    const raw = window.localStorage.getItem(USER_PLAN_KEY);
+    const raw = window.localStorage.getItem(getUserPlanStorageKey(email));
     if (!raw) return 0;
     const parsed = JSON.parse(raw) as LocalPlanPayload;
     return Number(parsed.savedAt ?? 0);
@@ -99,10 +137,9 @@ function getLocalPlanSavedAt(): number {
   }
 }
 
-function loadUserPlan(): Partial<Record<DayFilter, Set<string>>> {
+function loadUserPlan(email: string): Partial<Record<DayFilter, Set<string>>> {
   try {
-    // v2 format
-    const raw = window.localStorage.getItem(USER_PLAN_KEY);
+    const raw = window.localStorage.getItem(getUserPlanStorageKey(email));
     if (raw) {
       const parsed = JSON.parse(raw) as LocalPlanPayload;
       const result: Partial<Record<DayFilter, Set<string>>> = {};
@@ -114,30 +151,17 @@ function loadUserPlan(): Partial<Record<DayFilter, Set<string>>> {
       }
       return result;
     }
-    // Migrate from v1 (savedAt: 0 ensures DB wins if there's any data there)
-    const legacyRaw = window.localStorage.getItem(USER_PLAN_LEGACY_KEY);
-    if (legacyRaw) {
-      const parsed = JSON.parse(legacyRaw) as Partial<Record<DayFilter, string[]>>;
-      const result: Partial<Record<DayFilter, Set<string>>> = {};
-      for (const day of ["friday", "saturday", "sunday"] as DayFilter[]) {
-        const arr = parsed[day];
-        if (Array.isArray(arr) && arr.length > 0) {
-          result[day] = new Set(arr);
-        }
-      }
-      if (Object.keys(result).length > 0) {
-        saveUserPlan(result, 0); // write into v2 with stale timestamp
-        window.localStorage.removeItem(USER_PLAN_LEGACY_KEY);
-      }
-      return result;
-    }
     return {};
   } catch {
     return {};
   }
 }
 
-function saveUserPlan(plan: Partial<Record<DayFilter, Set<string>>>, savedAt?: number) {
+function saveUserPlan(
+  email: string,
+  plan: Partial<Record<DayFilter, Set<string>>>,
+  savedAt?: number
+) {
   try {
     const serializable: Partial<Record<DayFilter, string[]>> = {};
     for (const day of ["friday", "saturday", "sunday"] as DayFilter[]) {
@@ -148,7 +172,10 @@ function saveUserPlan(plan: Partial<Record<DayFilter, Set<string>>>, savedAt?: n
       plan: serializable,
       savedAt: savedAt ?? Date.now(),
     };
-    window.localStorage.setItem(USER_PLAN_KEY, JSON.stringify(payload));
+    window.localStorage.setItem(
+      getUserPlanStorageKey(email),
+      JSON.stringify(payload)
+    );
   } catch { /* ignore */ }
 }
 
@@ -178,6 +205,7 @@ export default function SchedulePage({
   use(searchParams);
 
   const { data: session, status: sessionStatus } = useSession();
+  const userEmail = session?.user?.email?.trim().toLowerCase() ?? "";
   const [profileOverride, setProfileOverride] = useState<{
     name: string;
     image: string;
@@ -186,7 +214,7 @@ export default function SchedulePage({
   const [scheduleLayout, setScheduleLayout] = useState<ScheduleLayout>("list");
   const [selectedDay, setSelectedDay] = useState<DayFilter>("friday");
   const [expandedArtist, setExpandedArtist] = useState<string | null>(null);
-  const [stageFilter, setStageFilter] = useState<Stage | "all">("all");
+
   const [userPlanByDay, setUserPlanByDay] = useState<
     Partial<Record<DayFilter, Set<string>>>
   >({});
@@ -229,14 +257,173 @@ export default function SchedulePage({
     [parties, schedulePartyVisible]
   );
 
-  // All schedule items as ArtistRecommendation (thin wrapper around SetTime)
-  const recommendations = useMemo<ArtistRecommendation[]>(
-    () => SCHEDULE.map((st) => ({ setTime: st })),
-    []
+  const [recommendations, setRecommendations] = useState<ArtistRecommendation[]>(
+    buildPlaceholderRecommendations
   );
+  const [recsFetchError, setRecsFetchError] = useState<string | null>(null);
+  const [showPopularSongs, setShowPopularSongs] = useState(() =>
+    typeof window === "undefined" ? true : getShowPopularSongs()
+  );
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingTrackKey, setPlayingTrackKey] = useState<string | null>(null);
+  const playingTrackKeyRef = useRef<string | null>(null);
+  const previewUrlCacheRef = useRef(new Map<string, string>());
+  const preloadedPreviewUrlsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    playingTrackKeyRef.current = playingTrackKey;
+  }, [playingTrackKey]);
+
+  const disposeAudioElement = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.removeAttribute("src");
+    audio.load();
+  }, []);
+
+  const stopPlayback = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    setPlayingTrackKey(null);
+  }, []);
+
+  const playTrack = useCallback(async (track: TrackInfo, scopeKey: string) => {
+    const key = `${scopeKey}:${String(track.id)}`;
+    let audio = audioRef.current;
+    if (!audio) {
+      audio = new Audio();
+      audio.preload = "auto";
+      audio.onended = () => setPlayingTrackKey(null);
+      audio.onpause = () => {
+        if (audioRef.current?.ended !== true) {
+          setPlayingTrackKey(null);
+        }
+      };
+      audioRef.current = audio;
+    }
+    if (playingTrackKeyRef.current === key && !audio.paused) {
+      stopPlayback();
+      return;
+    }
+
+    const tryPlay = async (url: string) => {
+      setPlayingTrackKey(key);
+      if (audio!.src !== url) {
+        audio!.src = url;
+      }
+      audio!.currentTime = 0;
+      await audio!.play();
+      previewUrlCacheRef.current.set(String(track.id), url);
+    };
+
+    const rollbackIfCurrent = () => {
+      if (playingTrackKeyRef.current === key) {
+        setPlayingTrackKey(null);
+      }
+    };
+
+    const cachedPreview =
+      previewUrlCacheRef.current.get(String(track.id)) ?? track.preview;
+    if (cachedPreview) {
+      try {
+        await tryPlay(cachedPreview);
+        return;
+      } catch {
+        rollbackIfCurrent();
+      }
+    }
+
+    try {
+      const r = await fetch(
+        `/api/track-preview?id=${encodeURIComponent(String(track.id))}`
+      );
+      const j = (await r.json()) as { preview?: string | null };
+      if (j.preview) {
+        await tryPlay(j.preview);
+        return;
+      }
+    } catch {
+      rollbackIfCurrent();
+    }
+    rollbackIfCurrent();
+  }, [stopPlayback]);
+
+  useEffect(() => {
+    return () => {
+      disposeAudioElement();
+      audioRef.current = null;
+    };
+  }, [disposeAudioElement]);
+
+  useEffect(() => {
+    const onPrefs = () => setShowPopularSongs(getShowPopularSongs());
+    window.addEventListener("coachella-prefs-changed", onPrefs);
+    return () => window.removeEventListener("coachella-prefs-changed", onPrefs);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = window.localStorage.getItem(SCHEDULE_REC_CACHE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as {
+            recommendations?: ArtistRecommendation[];
+          };
+          if (
+            Array.isArray(parsed.recommendations) &&
+            parsed.recommendations.length > 0
+          ) {
+            setRecommendations(parsed.recommendations);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+
+      try {
+        const res = await fetch("/api/recommendations");
+        const data = (await res.json()) as {
+          recommendations?: ArtistRecommendation[];
+        };
+        if (cancelled) return;
+        if (res.ok && data.recommendations?.length) {
+          setRecommendations(data.recommendations);
+          setRecsFetchError(null);
+          try {
+            window.localStorage.setItem(
+              SCHEDULE_REC_CACHE_KEY,
+              JSON.stringify({
+                recommendations: data.recommendations,
+                savedAt: Date.now(),
+              })
+            );
+          } catch {
+            /* ignore */
+          }
+        } else if (!res.ok) {
+          setRecsFetchError("Could not load artist images and previews");
+        }
+      } catch {
+        if (!cancelled) {
+          setRecsFetchError("Could not load artist images and previews");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const togglePlanItem = useCallback(
     (day: DayFilter, key: string) => {
+      if (!userEmail) return;
       setUserPlanByDay((prev) => {
         const next = { ...prev };
         const daySet = new Set(prev[day] ?? []);
@@ -246,39 +433,54 @@ export default function SchedulePage({
           daySet.add(key);
         }
         next[day] = daySet;
-        saveUserPlan(next);
+        saveUserPlan(userEmail, next);
         return next;
       });
     },
-    []
+    [userEmail]
   );
 
   const addToPlan = useCallback(
     (day: DayFilter, key: string) => {
+      if (!userEmail) return;
       setUserPlanByDay((prev) => {
         const next = { ...prev };
         const daySet = new Set(prev[day] ?? []);
         daySet.add(key);
         next[day] = daySet;
-        saveUserPlan(next);
+        saveUserPlan(userEmail, next);
         return next;
       });
     },
-    []
+    [userEmail]
   );
 
   const removeFromPlan = useCallback(
     (day: DayFilter, key: string) => {
+      if (!userEmail) return;
       setUserPlanByDay((prev) => {
         const next = { ...prev };
         const daySet = new Set(prev[day] ?? []);
         daySet.delete(key);
         next[day] = daySet;
-        saveUserPlan(next);
+        saveUserPlan(userEmail, next);
         return next;
       });
     },
-    []
+    [userEmail]
+  );
+
+  const clearPlanForDay = useCallback(
+    (day: DayFilter) => {
+      if (!userEmail) return;
+      setUserPlanByDay((prev) => {
+        const next = { ...prev };
+        delete next[day];
+        saveUserPlan(userEmail, next);
+        return next;
+      });
+    },
+    [userEmail]
   );
 
   useEffect(() => {
@@ -308,17 +510,28 @@ export default function SchedulePage({
     }
   }, [sessionStatus]);
 
-  // Seed userPlanByDay from localStorage on first load
+  // Reset and seed userPlanByDay whenever the authenticated user changes.
   useEffect(() => {
-    if (userPlanInitRef.current) return;
-    userPlanInitRef.current = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time init guarded by ref, intentional
-    setPlanInitialized(true);
-    const saved = loadUserPlan();
-    if (Object.keys(saved).length > 0) {
-      setUserPlanByDay(saved);
+    if (sessionStatus !== "authenticated" || !userEmail) {
+      userPlanInitRef.current = false;
+      planDbHydratedRef.current = false;
+      planSyncKeyRef.current = "";
+      startTransition(() => {
+        setPlanInitialized(false);
+        setUserPlanByDay({});
+      });
+      return;
     }
-  }, []);
+
+    userPlanInitRef.current = true;
+    planDbHydratedRef.current = false;
+    planSyncKeyRef.current = "";
+    const saved = loadUserPlan(userEmail);
+    startTransition(() => {
+      setUserPlanByDay(saved);
+      setPlanInitialized(true);
+    });
+  }, [sessionStatus, userEmail]);
 
   // Fetch parties, poll, and refresh when returning from Profile
   useEffect(() => {
@@ -395,6 +608,7 @@ export default function SchedulePage({
   // Compares DB updatedAt vs. local savedAt; takes whichever is newer.
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
+    if (!userEmail) return;
     if (!planInitialized) return;
     if (planDbHydratedRef.current) return;
     planDbHydratedRef.current = true;
@@ -409,7 +623,7 @@ export default function SchedulePage({
         };
         if (!data.updatedAt || !data.plan || Object.keys(data.plan).length === 0) return;
 
-        const localSavedAt = getLocalPlanSavedAt();
+        const localSavedAt = getLocalPlanSavedAt(userEmail);
         if (data.updatedAt <= localSavedAt) return; // localStorage is at least as fresh
 
         // DB has newer data — update state and localStorage
@@ -421,15 +635,16 @@ export default function SchedulePage({
           }
         }
         setUserPlanByDay(plan);
-        saveUserPlan(plan, data.updatedAt);
+        saveUserPlan(userEmail, plan, data.updatedAt);
       } catch { /* offline */ }
     })();
-  }, [sessionStatus, planInitialized]);
+  }, [sessionStatus, planInitialized, userEmail]);
 
   // ── Firestore: debounced sync of plan changes → /api/plan ────────────
   // Runs independently of party membership so solo users also get persistence.
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
+    if (!userEmail) return;
     if (!planInitialized) return;
     if (planSyncRef.current) clearTimeout(planSyncRef.current);
     planSyncRef.current = setTimeout(async () => {
@@ -453,11 +668,16 @@ export default function SchedulePage({
           const respData = (await res.json()) as { updatedAt?: number };
           if (respData.updatedAt) {
             try {
-              const raw = window.localStorage.getItem(USER_PLAN_KEY);
+              const raw = window.localStorage.getItem(
+                getUserPlanStorageKey(userEmail)
+              );
               if (raw) {
                 const parsed = JSON.parse(raw) as LocalPlanPayload;
                 parsed.savedAt = respData.updatedAt;
-                window.localStorage.setItem(USER_PLAN_KEY, JSON.stringify(parsed));
+                window.localStorage.setItem(
+                  getUserPlanStorageKey(userEmail),
+                  JSON.stringify(parsed)
+                );
               }
             } catch { /* ignore */ }
           }
@@ -467,7 +687,7 @@ export default function SchedulePage({
     return () => {
       if (planSyncRef.current) clearTimeout(planSyncRef.current);
     };
-  }, [userPlanByDay, sessionStatus, planInitialized]);
+  }, [userPlanByDay, sessionStatus, planInitialized, userEmail]);
 
   // Compute party member attendance per recIdentityKey (current user first)
   const partyAttendance = useMemo(() => {
@@ -541,34 +761,44 @@ export default function SchedulePage({
     partyStacksEnabled,
   ]);
 
-  const dayRecs = recommendations.filter((r) => r.setTime.day === selectedDay);
-
-  const filteredRecs = dayRecs.filter(
-    (r) => stageFilter === "all" || r.setTime.stage === stageFilter
+  const dayRecs = useMemo(
+    () => recommendations.filter((r) => r.setTime.day === selectedDay),
+    [recommendations, selectedDay]
   );
 
-  const sortedByTime = [...filteredRecs].sort((a, b) => {
-    if (a.setTime.startTime !== b.setTime.startTime)
-      return a.setTime.startTime.localeCompare(b.setTime.startTime);
-    return (
-      STAGES.indexOf(a.setTime.stage as Stage) -
-      STAGES.indexOf(b.setTime.stage as Stage)
-    );
-  });
-
-  const currentDayPlan = userPlanByDay[selectedDay];
-
-  const gridItems: ScheduleGridItem[] = useMemo(() => {
-    const planSet = currentDayPlan;
-    const allDaySorted = [...dayRecs].sort((a, b) => {
-      if (a.setTime.startTime !== b.setTime.startTime)
+  const sortedDayRecs = useMemo(() => {
+    return [...dayRecs].sort((a, b) => {
+      if (a.setTime.startTime !== b.setTime.startTime) {
         return a.setTime.startTime.localeCompare(b.setTime.startTime);
+      }
       return (
         STAGES.indexOf(a.setTime.stage as Stage) -
         STAGES.indexOf(b.setTime.stage as Stage)
       );
     });
-    return allDaySorted.map((rec) => {
+  }, [dayRecs]);
+
+  const dayRecByRowKey = useMemo(() => {
+    const map = new Map<string, ArtistRecommendation>();
+    for (const rec of sortedDayRecs) {
+      map.set(gridRowKeyNonPlan(rec), rec);
+    }
+    return map;
+  }, [sortedDayRecs]);
+
+  const dayRecByIdentityKey = useMemo(() => {
+    const map = new Map<string, ArtistRecommendation>();
+    for (const rec of sortedDayRecs) {
+      map.set(recIdentityKey(rec), rec);
+    }
+    return map;
+  }, [sortedDayRecs]);
+
+  const currentDayPlan = userPlanByDay[selectedDay];
+
+  const gridItems: ScheduleGridItem[] = useMemo(() => {
+    const planSet = currentDayPlan;
+    return sortedDayRecs.map((rec) => {
       const key = recIdentityKey(rec);
       const members = partyAttendance.get(key);
       const stack =
@@ -584,14 +814,14 @@ export default function SchedulePage({
     });
   }, [
     currentDayPlan,
-    dayRecs,
+    sortedDayRecs,
     partyAttendance,
     partyStacksEnabled,
   ]);
 
-  /** List (View Mode): rows derived from plan only, in time order, with walk + overlap info */
+  /** List (View Mode): rows derived from plan only, in time order, with walk info */
   const userPlanListForDay = useMemo(() => {
-    const planSet = userPlanByDay[selectedDay];
+    const planSet = currentDayPlan;
     if (!planSet || planSet.size === 0) {
       return {
         recs: [] as ArtistRecommendation[],
@@ -599,25 +829,15 @@ export default function SchedulePage({
           walkFromPrevious: number | null;
           walkMilesFromPrevious: number | null;
           prevStage: string | null;
-          isConflict: boolean;
-          conflictWith?: string[];
         }[],
         totalWalkMinutes: 0,
         totalWalkMiles: 0,
       };
     }
     const recs: ArtistRecommendation[] = [];
-    for (const r of dayRecs) {
+    for (const r of sortedDayRecs) {
       if (planSet.has(recIdentityKey(r))) recs.push(r);
     }
-    recs.sort((a, b) => {
-      if (a.setTime.startTime !== b.setTime.startTime)
-        return a.setTime.startTime.localeCompare(b.setTime.startTime);
-      return (
-        STAGES.indexOf(a.setTime.stage as Stage) -
-        STAGES.indexOf(b.setTime.stage as Stage)
-      );
-    });
 
     let totalWalkMinutes = 0;
     let totalWalkMiles = 0;
@@ -625,8 +845,6 @@ export default function SchedulePage({
       walkFromPrevious: number | null;
       walkMilesFromPrevious: number | null;
       prevStage: string | null;
-      isConflict: boolean;
-      conflictWith?: string[];
     }[] = [];
 
     for (let idx = 0; idx < recs.length; idx++) {
@@ -644,55 +862,140 @@ export default function SchedulePage({
         totalWalkMinutes += walkFromPrevious;
         totalWalkMiles += walkMilesFromPrevious;
       }
-
-      const overlapNames = dayRecs
-        .filter(
-          (r) =>
-            r.setTime.artist.name !== rec.setTime.artist.name &&
-            setsOverlap(r.setTime, rec.setTime)
-        )
-        .map((r) => r.setTime.artist.name);
-
-      rows.push({
-        walkFromPrevious,
-        walkMilesFromPrevious,
-        prevStage,
-        isConflict: overlapNames.length > 0,
-        conflictWith: overlapNames,
-      });
+      rows.push({ walkFromPrevious, walkMilesFromPrevious, prevStage });
     }
 
     return { recs, rows, totalWalkMinutes, totalWalkMiles };
-  }, [selectedDay, dayRecs, userPlanByDay]);
+  }, [currentDayPlan, sortedDayRecs]);
 
   const scheduleLayoutEffective: ScheduleLayout =
     gridItems.length === 0 ? "list" : scheduleLayout;
 
   const handleGridTogglePlan = useCallback(
     (rowKey: string) => {
-      const rec = dayRecs.find((r) => gridRowKeyNonPlan(r) === rowKey);
+      const rec = dayRecByRowKey.get(rowKey);
       if (!rec) return;
       togglePlanItem(selectedDay, recIdentityKey(rec));
     },
-    [dayRecs, selectedDay, togglePlanItem]
+    [dayRecByRowKey, selectedDay, togglePlanItem]
   );
 
   const gridSelectedArtistRec: ArtistRecommendation | null = useMemo(() => {
     if (scheduleLayoutEffective !== "grid" || !expandedArtist) return null;
-    return (
-      dayRecs.find((r) => gridRowKeyNonPlan(r) === expandedArtist) ?? null
-    );
-  }, [scheduleLayoutEffective, expandedArtist, dayRecs]);
+    return dayRecByRowKey.get(expandedArtist) ?? null;
+  }, [scheduleLayoutEffective, expandedArtist, dayRecByRowKey]);
+
+  const setExpandedArtistSafely = useCallback(
+    (next: string | null) => {
+      if (playingTrackKey !== null) stopPlayback();
+      startTransition(() => {
+        setExpandedArtist(next);
+      });
+    },
+    [stopPlayback, playingTrackKey]
+  );
 
   useEffect(() => {
     if (!expandedArtist) return;
     if (gridItems.length === 0 || scheduleLayout !== "grid") return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setExpandedArtist(null);
+      if (e.key === "Escape") setExpandedArtistSafely(null);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [expandedArtist, scheduleLayout, gridItems.length]);
+  }, [expandedArtist, scheduleLayout, gridItems.length, setExpandedArtistSafely]);
+
+  const visibleTrackKeys = useMemo(() => {
+    if (!showPopularSongs) return new Set<string>();
+
+    const visibleRec =
+      scheduleLayoutEffective === "grid"
+        ? gridSelectedArtistRec
+        : expandedArtist
+          ? dayRecByIdentityKey.get(expandedArtist) ?? null
+          : null;
+
+    if (!visibleRec || (visibleRec.topTracks?.length ?? 0) === 0) {
+      return new Set<string>();
+    }
+
+    return new Set(
+      visibleRec.topTracks.map(
+        (track) => `${recIdentityKey(visibleRec)}:${String(track.id)}`
+      )
+    );
+  }, [
+    dayRecByIdentityKey,
+    expandedArtist,
+    gridSelectedArtistRec,
+    scheduleLayoutEffective,
+    showPopularSongs,
+  ]);
+
+  useEffect(() => {
+    if (playingTrackKey && !visibleTrackKeys.has(playingTrackKey)) {
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    }
+  }, [playingTrackKey, visibleTrackKeys]);
+
+  useEffect(() => {
+    if (!showPopularSongs) return;
+
+    const visibleRec =
+      scheduleLayoutEffective === "grid"
+        ? gridSelectedArtistRec
+        : expandedArtist
+          ? dayRecByIdentityKey.get(expandedArtist) ?? null
+          : null;
+    if (!visibleRec || (visibleRec.topTracks?.length ?? 0) === 0) return;
+
+    const preload = () => {
+      for (const track of visibleRec.topTracks ?? []) {
+        const preview =
+          previewUrlCacheRef.current.get(String(track.id)) ?? track.preview;
+        if (
+          !preview ||
+          preloadedPreviewUrlsRef.current.has(preview)
+        ) {
+          continue;
+        }
+
+        preloadedPreviewUrlsRef.current.add(preview);
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "audio";
+        link.href = preview;
+        link.crossOrigin = "anonymous";
+        document.head.appendChild(link);
+      }
+    };
+
+    const maybeWindow = window as Window & {
+      requestIdleCallback?: (
+        cb: IdleRequestCallback,
+        opts?: IdleRequestOptions
+      ) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (typeof maybeWindow.requestIdleCallback === "function") {
+      const idleId = maybeWindow.requestIdleCallback(preload, { timeout: 300 });
+      return () => maybeWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = setTimeout(preload, 0);
+    return () => clearTimeout(timeoutId);
+  }, [
+    dayRecByIdentityKey,
+    expandedArtist,
+    gridSelectedArtistRec,
+    scheduleLayoutEffective,
+    showPopularSongs,
+  ]);
 
   // ── Session ─────────────────────────────────────────────────────────
 
@@ -708,8 +1011,6 @@ export default function SchedulePage({
       walkFromPrevious: number | null;
       walkMilesFromPrevious?: number | null;
       prevStage: string | null;
-      isConflict: boolean;
-      conflictWith?: string[];
     },
     rowId?: string
   ) => {
@@ -738,8 +1039,10 @@ export default function SchedulePage({
         {/* Main row */}
         <button
           type="button"
-          onClick={() => setExpandedArtist(isExpanded ? null : key)}
-          className={`group schedule-artist-btn w-full text-left border-b border-border/30 ${
+          onClick={() => setExpandedArtistSafely(isExpanded ? null : key)}
+          className={`group schedule-artist-btn w-full text-left ${
+            isExpanded ? "border-b border-border/30" : ""
+          } ${
             walkInfo?.walkFromPrevious != null && walkInfo.walkFromPrevious > 0
               ? "border-t border-border/30"
               : ""
@@ -752,10 +1055,18 @@ export default function SchedulePage({
               style={{ backgroundColor: stageColor }}
             />
 
-            {/* Artist initial */}
-            <div className="w-10 h-10 scratch-blob bg-[var(--hover-wash-strong)] flex items-center justify-center shrink-0 text-sm font-display font-bold text-muted">
-              {displayName.charAt(0)}
-            </div>
+            {rec.artist?.image ? (
+              <img
+                src={rec.artist.image}
+                alt=""
+                className="h-10 w-10 shrink-0 object-cover scratch-blob"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center scratch-blob bg-[var(--hover-wash-strong)] font-display text-sm font-bold text-muted">
+                {displayName.charAt(0)}
+              </div>
+            )}
 
             {/* Info */}
             <div className="flex-1 min-w-0 sm:flex sm:flex-col sm:justify-center">
@@ -790,20 +1101,6 @@ export default function SchedulePage({
                     </span>
                   </>
                 )}
-                {walkInfo?.isConflict && walkInfo.conflictWith?.length && (
-                  <>
-                    <span className="text-border">·</span>
-                    <span className="text-foreground/90 max-w-[min(100%,14rem)] sm:max-w-[22rem] sm:truncate">
-                      <span className="text-[13px] text-cyan mr-0.5">
-                        overlap
-                      </span>
-                      with{" "}
-                      <span className="font-medium text-foreground">
-                        {walkInfo.conflictWith.slice(0, 4).join(", ")}
-                      </span>
-                    </span>
-                  </>
-                )}
               </div>
             </div>
 
@@ -826,49 +1123,149 @@ export default function SchedulePage({
           </div>
         </button>
 
-        {/* Expanded: Going */}
-        {isExpanded && partyStacksEnabled && parties.length > 0 && (
+        {/* Expanded: Going, tracks, artist link */}
+        {isExpanded &&
+          (partyStacksEnabled && parties.length > 0
+            ? true
+            : showPopularSongs && (rec.topTracks?.length ?? 0) > 0
+              ? true
+              : !!rec.artist?.link) && (
           <div className="scratch-panel mx-2 sm:mx-3 mt-2 mb-2 border-b-0">
-            <div className="px-5 py-2.5">
-              <p className="mb-2 font-display text-sm font-semibold text-foreground/90">
-                Going
-              </p>
-              {goingToThisSet.length > 0 ? (
-                <ul className="space-y-2">
-                  {goingToThisSet.map((m) => (
-                    <li
-                      key={m.email}
-                      className="flex min-w-0 items-center gap-2.5"
-                    >
-                      {m.image ? (
-                        <img
-                          src={m.image}
-                          alt=""
-                          className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-border/40"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--hover-wash-strong)] text-[12px] font-bold text-muted">
-                          {m.name.charAt(0)}
-                        </div>
-                      )}
-                      <span className="min-w-0 truncate text-[14px] text-foreground">
-                        {m.name}
-                        {session?.user?.email === m.email && (
-                          <span className="ml-1.5 text-[12px] text-muted">
-                            (you)
-                          </span>
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-[13px] text-muted">
-                  No one from your parties is going to this set yet.
+            {partyStacksEnabled && parties.length > 0 && (
+              <div className="px-5 py-2.5">
+                <p className="mb-2 font-display text-sm font-semibold text-foreground/90">
+                  Going
                 </p>
-              )}
-            </div>
+                {goingToThisSet.length > 0 ? (
+                  <ul className="space-y-2">
+                    {goingToThisSet.map((m) => (
+                      <li
+                        key={m.email}
+                        className="flex min-w-0 items-center gap-2.5"
+                      >
+                        {m.image ? (
+                          <img
+                            src={m.image}
+                            alt=""
+                            className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-border/40"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--hover-wash-strong)] text-[12px] font-bold text-muted">
+                            {m.name.charAt(0)}
+                          </div>
+                        )}
+                        <span className="min-w-0 truncate text-[14px] text-foreground">
+                          {m.name}
+                          {session?.user?.email === m.email && (
+                            <span className="ml-1.5 text-[12px] text-muted">
+                              (you)
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[13px] text-muted">
+                    No one from your parties is going to this set yet.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {showPopularSongs && (rec.topTracks?.length ?? 0) > 0 && (
+              <div
+                className={`pt-2.5 pb-0 ${
+                  partyStacksEnabled && parties.length > 0
+                    ? "border-t border-border/30"
+                    : ""
+                }`}
+              >
+                <p className="mb-2 px-5 font-display text-sm font-semibold text-foreground/90">
+                  Popular Songs
+                </p>
+                <ul>
+                  {rec.topTracks.map((track) => {
+                    const tk = `${recIdentityKey(rec)}:${String(track.id)}`;
+                    const playing = playingTrackKey === tk;
+                    return (
+                      <li
+                        key={String(track.id)}
+                        className={`track-row flex min-w-0 items-center gap-3 border-t border-dashed px-5 py-3 first:border-t-0 ${
+                          playing ? "is-playing" : ""
+                        }`}
+                      >
+                        <div
+                          className={`track-art-shell flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded ${
+                            playing ? "is-playing" : ""
+                          }`}
+                          aria-hidden
+                        >
+                          {track.albumCover ? (
+                            <img
+                              src={track.albumCover}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-[var(--hover-wash-strong)] text-[10px] text-muted">
+                              ♪
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="flex items-center gap-1.5 truncate text-[13px] text-foreground">
+                            <PlayingBars active={playing} />
+                            <span className="truncate">{track.title}</span>
+                          </p>
+                          <p className="text-[11px] text-muted">
+                            {formatDuration(track.duration)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void playTrack(track, recIdentityKey(rec));
+                          }}
+                          className={`track-icon-button flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                            playing
+                              ? "bg-[var(--hover-wash)] text-[var(--teal)]"
+                              : "text-muted hover:bg-[var(--hover-wash)] hover:text-foreground"
+                          }`}
+                          aria-label={playing ? "Pause preview" : "Play preview"}
+                        >
+                          <TrackPlayToggleIcon playing={playing} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {rec.artist?.link && (
+              <div
+                className={`px-5 py-2.5 ${
+                  (partyStacksEnabled && parties.length > 0) ||
+                  (showPopularSongs && (rec.topTracks?.length ?? 0) > 0)
+                    ? "border-t border-border/30"
+                    : ""
+                }`}
+              >
+                <a
+                  href={rec.artist.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[13px] text-cyan hover:text-foreground underline decoration-dotted underline-offset-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Open artist on Spotify
+                </a>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -888,11 +1285,13 @@ export default function SchedulePage({
       className={
         isGridFullscreen
           ? "flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden overscroll-none bg-background"
-          : "min-h-screen"
+          : "flex min-h-screen flex-col"
       }
     >
       <div className="noise-overlay" aria-hidden />
 
+      {/* Above fixed noise (z-50) so schedule body + sticky grid read at full opacity */}
+      <div className="relative z-[60] flex min-h-0 min-w-0 w-full flex-1 flex-col">
       {/* Header */}
       <header
         className={`z-50 bg-background ${
@@ -917,7 +1316,7 @@ export default function SchedulePage({
                     <img
                       src={headerImage}
                       alt=""
-                      className="h-5 w-5 shrink-0 rounded-full object-cover ring-1 ring-[color-mix(in_srgb,var(--cream)_40%,transparent)]"
+                      className="h-5 w-5 shrink-0 rounded-full object-cover"
                       referrerPolicy="no-referrer"
                     />
                   )}
@@ -928,7 +1327,7 @@ export default function SchedulePage({
           </div>
         </div>
 
-        <div className="grain-strong border-b border-border/40 bg-background/95 backdrop-blur-sm px-4 pb-3 pt-3 sm:px-6">
+        <div className="grain-strong border-b border-border/40 bg-[var(--schedule-toolbar-wash)] backdrop-blur-sm px-4 pb-3 pt-3 sm:px-6">
           <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
             {/* Day picker */}
             <div className="flex flex-wrap gap-2">
@@ -936,11 +1335,15 @@ export default function SchedulePage({
                 <button
                   key={day.id}
                   type="button"
-                  onClick={() => setSelectedDay(day.id)}
-                  className={`scratch-pill px-3.5 py-1.5 text-[13px] font-display font-medium border border-border/50 transition-colors ${
+                  onClick={() => {
+                    stopPlayback();
+                    setExpandedArtist(null);
+                    setSelectedDay(day.id);
+                  }}
+                  className={`scratch-pill px-3.5 py-1.5 text-[13px] font-display font-medium border transition-colors ${
                     selectedDay === day.id
-                      ? "bg-[var(--expand-wash)] text-foreground border-cyan/35 z-10"
-                      : "text-muted hover:text-foreground hover:bg-[var(--hover-wash)]"
+                      ? "border-transparent bg-[var(--teal)] text-[var(--cream)] shadow-[0_1px_4px_rgba(12,31,36,0.22)] z-10"
+                      : "border-border/50 text-muted hover:text-foreground hover:bg-[var(--hover-wash)]"
                   }`}
                 >
                   {day.id.charAt(0).toUpperCase() + day.id.slice(1)}
@@ -956,62 +1359,61 @@ export default function SchedulePage({
               >
                 <button
                   type="button"
-                  onClick={() => setScheduleLayout("list")}
-                  className={`scratch-pill px-3 py-1.5 text-[12px] font-medium border border-border/50 transition-colors ${
+                  onClick={() => {
+                    stopPlayback();
+                    setExpandedArtist(null);
+                    setScheduleLayout("list");
+                  }}
+                  className={`scratch-pill px-3 py-1.5 text-[12px] font-medium border transition-colors ${
                     scheduleLayoutEffective === "list"
-                      ? "bg-[var(--hover-wash-strong)] text-foreground border-cyan/30 z-10"
-                      : "text-muted/70 hover:text-foreground hover:bg-[var(--hover-wash)]"
+                      ? "border-transparent bg-[var(--green)] text-[var(--cream)] shadow-[0_1px_4px_rgba(12,31,36,0.2)] z-10"
+                      : "border-border/50 text-muted/70 hover:text-foreground hover:bg-[var(--hover-wash)]"
                   }`}
                 >
                   List (View Mode)
                 </button>
                 <button
                   type="button"
-                  onClick={() => setScheduleLayout("grid")}
-                  className={`scratch-pill px-3 py-1.5 text-[12px] font-medium border border-border/50 transition-colors ${
+                  onClick={() => {
+                    stopPlayback();
+                    setExpandedArtist(null);
+                    setScheduleLayout("grid");
+                  }}
+                  className={`scratch-pill px-3 py-1.5 text-[12px] font-medium border transition-colors ${
                     scheduleLayoutEffective === "grid"
-                      ? "bg-[var(--hover-wash-strong)] text-foreground border-cyan/30 z-10"
-                      : "text-muted/70 hover:text-foreground hover:bg-[var(--hover-wash)]"
+                      ? "border-transparent bg-[var(--green)] text-[var(--cream)] shadow-[0_1px_4px_rgba(12,31,36,0.2)] z-10"
+                      : "border-border/50 text-muted/70 hover:text-foreground hover:bg-[var(--hover-wash)]"
                   }`}
                 >
                   Grid (Edit Mode)
                 </button>
               </div>
             )}
-
-            {/* Stage filter — grid only */}
-            {scheduleLayoutEffective !== "list" && (
-              <select
-                value={stageFilter}
-                onChange={(e) =>
-                  setStageFilter(e.target.value as Stage | "all")
-                }
-                className="bg-background text-foreground scratch-pill border border-border/50 text-[12px] px-2.5 py-1.5 outline-none cursor-pointer"
-              >
-                <option value="all">All stages</option>
-                {STAGES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
         </div>
       </header>
+
+      {recsFetchError && (
+        <div
+          className="relative z-10 border-b border-border/35 bg-[var(--hover-wash)] px-4 py-2 text-center sm:px-6"
+          role="status"
+        >
+          <p className="text-[12px] text-muted">{recsFetchError}</p>
+        </div>
+      )}
 
       {/* Content */}
       <div
         className={
           isGridFullscreen
-            ? "relative z-10 flex min-h-0 min-w-0 flex-1 flex-col"
-            : "relative z-10"
+            ? "relative z-10 flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--schedule-content-bg)]"
+            : "relative z-10 flex flex-1 flex-col bg-[var(--schedule-content-bg)]"
         }
       >
         {scheduleLayoutEffective === "list" ? (
-          <div>
+          <div className="flex flex-1 flex-col">
             <div
-              className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 border-b border-border/40 text-[13px] text-muted`}
+              className={`flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/40 bg-[var(--schedule-toolbar-wash)] px-5 py-3 text-[13px] text-muted`}
             >
               <span
                 title={`Path distances are approximate; time assumes ~${FESTIVAL_WALK_MPH} mph festival walking pace.`}
@@ -1034,13 +1436,15 @@ export default function SchedulePage({
                 </p>
               </div>
             ) : (
-              userPlanListForDay.recs.map((rec, idx) =>
-                renderArtistRow(
-                  rec,
-                  userPlanListForDay.rows[idx],
-                  recIdentityKey(rec)
-                )
-              )
+              <div className="divide-y divide-border/30">
+                {userPlanListForDay.recs.map((rec, idx) =>
+                  renderArtistRow(
+                    rec,
+                    userPlanListForDay.rows[idx],
+                    recIdentityKey(rec)
+                  )
+                )}
+              </div>
             )}
           </div>
         ) : (
@@ -1049,32 +1453,56 @@ export default function SchedulePage({
               isGridFullscreen ? "flex min-h-0 min-w-0 flex-1 flex-col" : ""
             }
           >
-            {sortedByTime.length === 0 ? (
-              <div className="text-center py-20 px-6">
-                <p className="text-muted text-sm">No artists match.</p>
-                <button
-                  type="button"
-                  onClick={() => setStageFilter("all")}
-                  className="mt-3 text-cyan text-sm hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
-                >
-                  Reset filters
-                </button>
-              </div>
-            ) : (
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                {/* Grid info bar */}
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border/40 bg-[var(--schedule-grid-info-wash)] px-4 py-2 sm:px-5">
+                  <span
+                    className="text-[13px] text-muted"
+                    title={`Path distances are approximate; time assumes ~${FESTIVAL_WALK_MPH} mph festival walking pace.`}
+                  >
+                    {userPlanListForDay.recs.length === 0
+                      ? "Nothing in your plan yet — tap + to add sets"
+                      : `${userPlanListForDay.recs.length} set${userPlanListForDay.recs.length === 1 ? "" : "s"}, ~${userPlanListForDay.totalWalkMinutes} min (${formatTotalWalkDistance(userPlanListForDay.totalWalkMiles)}) walking between sets`}
+                  </span>
+                  {userPlanListForDay.recs.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => clearPlanForDay(selectedDay)}
+                      className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2 shrink-0"
+                    >
+                      Clear day
+                    </button>
+                  )}
+                </div>
                 <ScheduleGridView
                   fillViewport
                   items={gridItems}
                   stageColors={STAGE_COLORS}
                   expandedKey={expandedArtist}
-                  onSelect={setExpandedArtist}
+                  onSelect={setExpandedArtistSafely}
                   editable
                   onTogglePlan={handleGridTogglePlan}
                 />
-              </div>
-            )}
+            </div>
           </div>
         )}
+
+      {scheduleLayoutEffective === "list" && (
+        <footer className="grain-strong relative z-10 shrink-0 border-t border-border/40 bg-[var(--schedule-content-bg)] px-8 py-6 sm:px-12 lg:px-16">
+          <p className="max-w-2xl mx-auto text-center text-[12px] text-muted/50">
+            Made with ❤️ by{" "}
+            <a
+              href="https://kylehe.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted/70 underline decoration-dotted underline-offset-2 hover:text-foreground transition-colors"
+            >
+              Kyle He
+            </a>
+          </p>
+        </footer>
+      )}
+      </div>
       </div>
 
       {gridSelectedArtistRec && scheduleLayoutEffective === "grid" && (() => {
@@ -1089,12 +1517,21 @@ export default function SchedulePage({
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/30 px-4 py-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center scratch-blob bg-[var(--hover-wash-strong)] font-display text-sm font-bold text-muted"
-                aria-hidden
-              >
-                {gridSelectedArtistRec.setTime.artist.name.charAt(0)}
-              </div>
+              {gridSelectedArtistRec.artist?.image ? (
+                <img
+                  src={gridSelectedArtistRec.artist.image}
+                  alt=""
+                  className="h-10 w-10 shrink-0 object-cover scratch-blob"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center scratch-blob bg-[var(--hover-wash-strong)] font-display text-sm font-bold text-muted"
+                  aria-hidden
+                >
+                  {gridSelectedArtistRec.setTime.artist.name.charAt(0)}
+                </div>
+              )}
               <h2 className="m-0 min-w-0 flex-1 font-display text-[1.35rem] font-semibold leading-tight text-foreground">
                 {gridSelectedArtistRec.setTime.artist.name}
               </h2>
@@ -1119,7 +1556,7 @@ export default function SchedulePage({
               </button>
               <button
                 type="button"
-                onClick={() => setExpandedArtist(null)}
+                onClick={() => setExpandedArtistSafely(null)}
                 className="scratch-pill shrink-0 px-3 py-1.5 text-[12px] font-medium text-muted hover:text-foreground"
               >
                 Close
@@ -1168,6 +1605,88 @@ export default function SchedulePage({
                 <p className="text-[14px] text-muted">
                   {gridSelectedArtistRec.setTime.stage} · {formatTime(gridSelectedArtistRec.setTime.startTime)} – {formatTime(gridSelectedArtistRec.setTime.endTime)}
                 </p>
+              </div>
+            )}
+
+            {showPopularSongs &&
+              (gridSelectedArtistRec.topTracks?.length ?? 0) > 0 && (
+                <div className="border-t border-border/30 pt-3 pb-0">
+                  <p className="mb-2 px-4 font-display text-sm font-semibold text-foreground/90">
+                    Popular Songs
+                  </p>
+                  <ul>
+                    {gridSelectedArtistRec.topTracks.map((track) => {
+                      const tk = `${recIdentityKey(gridSelectedArtistRec)}:${String(track.id)}`;
+                      const playing = playingTrackKey === tk;
+                      return (
+                        <li
+                          key={String(track.id)}
+                          className={`track-row flex min-w-0 items-center gap-3 border-t border-dashed px-4 py-3 first:border-t-0 ${
+                            playing ? "is-playing" : ""
+                          }`}
+                        >
+                          <div
+                            className={`track-art-shell flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded ${
+                              playing ? "is-playing" : ""
+                            }`}
+                            aria-hidden
+                          >
+                            {track.albumCover ? (
+                              <img
+                                src={track.albumCover}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-[var(--hover-wash-strong)] text-[10px] text-muted">
+                                ♪
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="flex items-center gap-1.5 truncate text-[13px] text-foreground">
+                              <PlayingBars active={playing} />
+                              <span className="truncate">{track.title}</span>
+                            </p>
+                            <p className="text-[11px] text-muted">
+                              {formatDuration(track.duration)}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void playTrack(
+                                track,
+                                recIdentityKey(gridSelectedArtistRec)
+                              )
+                            }
+                            className={`track-icon-button flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                              playing
+                                ? "bg-[var(--hover-wash)] text-[var(--teal)]"
+                                : "text-muted hover:bg-[var(--hover-wash)] hover:text-foreground"
+                            }`}
+                            aria-label={playing ? "Pause preview" : "Play preview"}
+                          >
+                            <TrackPlayToggleIcon playing={playing} />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+            {gridSelectedArtistRec.artist?.link && (
+              <div className="border-t border-border/30 px-4 py-3">
+                <a
+                  href={gridSelectedArtistRec.artist.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[13px] text-cyan hover:text-foreground underline decoration-dotted underline-offset-2"
+                >
+                  Open artist on Spotify
+                </a>
               </div>
             )}
           </div>

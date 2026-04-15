@@ -36,7 +36,8 @@
   --gray-600: #3d5c62;
 
   /* Semantic */
-  --background: var(--cream);
+  /* Main app canvas + schedule body (accents use --teal / --green / --cream) */
+  --background: #f8e5cc;
   --foreground: var(--teal);
   --accent: var(--green);
   --accent-hover: var(--blue-hover);
@@ -46,13 +47,21 @@
   --surface-lighter: #3a6240;
   --border: #c9b899;
   --muted: #4d6d72;
+  --schedule-chrome-bg: #f8e5cc;
+  --schedule-content-bg: #f8e5cc;
 
-  /* Analogous hovers — teal/cream only (no harsh jump to dark or white) */
-  --hover-wash: color-mix(in srgb, var(--teal) 7%, var(--cream));
-  --hover-wash-strong: color-mix(in srgb, var(--teal) 12%, var(--cream));
-  --expand-wash: color-mix(in srgb, var(--teal) 13%, var(--cream));
+  /* Analogous hovers */
+  --hover-wash: color-mix(in srgb, var(--teal) 7%, var(--schedule-content-bg));
+  --hover-wash-strong: color-mix(in srgb, var(--teal) 12%, var(--schedule-content-bg));
+  --expand-wash: color-mix(in srgb, var(--teal) 13%, var(--schedule-content-bg));
   --panel-tint: color-mix(in srgb, var(--cream) 88%, var(--teal));
   --accent-hover-soft: color-mix(in srgb, var(--green) 82%, var(--teal));
+
+  /* Schedule grid/list toolbar strips */
+  --schedule-grid-info-wash: var(--schedule-chrome-bg);
+
+  /* Schedule page: sticky day/list toolbar + list walk row */
+  --schedule-toolbar-wash: var(--schedule-chrome-bg);
 
   /* Stage pip colors — harmonized to teal / green / desert */
   --stage-coachella: var(--teal);
@@ -287,11 +296,48 @@ h1, h2, h3, h4, .font-display {
 /* ── Track preview ────────────────────────────────────────────────── */
 
 .track-row {
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Dashed rules between tracks — read clearly on cream without matching body hairlines */
+.track-row:not(:first-child) {
+  border-top-color: color-mix(in srgb, var(--border) 68%, var(--teal) 28%);
 }
 
 .track-row:hover {
-  background: color-mix(in srgb, var(--teal) 9%, var(--cream));
+  background: color-mix(in srgb, var(--teal) 9%, var(--schedule-content-bg));
+}
+
+.track-row.is-playing {
+  background: color-mix(in srgb, var(--teal) 11%, var(--schedule-content-bg));
+}
+
+.track-art-shell {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 65%, transparent);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+}
+
+.track-art-shell.is-playing {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--teal) 45%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--teal) 28%, transparent);
+  filter: saturate(1.05);
+}
+
+.track-icon-button {
+  border: 0;
+  background: transparent;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.track-icon-button:hover {
+  transform: scale(1.04);
+}
+
+.track-icon-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--teal) 65%, white);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 /* ── Stage color system ───────────────────────────────────────────── */
@@ -351,7 +397,7 @@ hr {
 
 .eq-bar {
   width: 2px;
-  background: var(--cream);
+  background: currentColor;
   animation: eq-bar 0.8s ease infinite;
 }
 

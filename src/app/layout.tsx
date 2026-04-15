@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { getSiteUrl } from "@/lib/party-invite";
 import { Providers } from "./Providers";
 import "./globals.css";
 
@@ -25,9 +26,10 @@ const perfectlyNineties = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Coachella Planner — Your Personalized Festival Schedule",
+  metadataBase: new URL(getSiteUrl()),
+  title: "Coachella Planner",
   description:
-    "Connect Spotify, get a Coachella 2026 schedule built around what you actually listen to.",
+    "Share your Coachella plan with your friends",
 };
 
 export default function RootLayout({

@@ -8,6 +8,7 @@ const KEYS_TO_CLEAR = [
   "coachella:schedule:v2",
   "coachella:schedule:v3",
   "coachella:schedule:v4",
+  "coachella:scheduleRecommendations:v1",
   "coachella:session",
   "coachella:userplan:v1",
 ];

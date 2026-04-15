@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect, useCallback, useRef, use } from "react";
 import { PartyScheduleToggle } from "@/app/PartyScheduleToggle";
+import { buildPartyInvitePath, normalizePartyCode } from "@/lib/party-invite";
 import {
   getShowPopularSongs,
   setShowPopularSongsPreference,
@@ -52,6 +53,7 @@ export default function ProfilePage({
   const [toastMessage, setToastMessage] = useState("Link copied to clipboard!");
   const copyToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const codeCopiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inviteJoinAttemptedRef = useRef<string | null>(null);
   const [profileName, setProfileName] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
@@ -59,9 +61,21 @@ export default function ProfilePage({
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
-  const preEditRef = useRef<{ name: string; image: string } | null>(null);
 
   const [showPopularSongs, setShowPopularSongs] = useState(true);
+
+  const clearJoinQueryParam = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("join");
+    window.history.replaceState({}, "", url.toString());
+  }, []);
+
+  const getInviteUrl = useCallback((code: string) => {
+    const path = buildPartyInvitePath(code);
+    if (typeof window === "undefined") return path;
+    return new URL(path, window.location.origin).toString();
+  }, []);
 
   useEffect(() => {
     setShowPopularSongs(getShowPopularSongs());
@@ -96,7 +110,7 @@ export default function ProfilePage({
     if (typeof window === "undefined") return;
     const code = new URLSearchParams(window.location.search).get("join");
     if (!code) return;
-    setPartyCodeInput(code.toUpperCase());
+    setPartyCodeInput(normalizePartyCode(code));
     setShowJoinForm(true);
     setShowCreateForm(false);
   }, []);
@@ -170,27 +184,64 @@ export default function ProfilePage({
   }, []);
 
   const joinParty = useCallback(async (code: string) => {
+    const normalizedCode = normalizePartyCode(code);
     setPartyAction(true);
     setPartyError(null);
     try {
       const res = await fetch("/api/party", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "join", code }),
+        body: JSON.stringify({ action: "join", code: normalizedCode }),
       });
       const data = (await res.json()) as {
         parties?: Party[];
         schedulePartyVisible?: Record<string, boolean>;
         error?: string;
       };
-      if (!res.ok) { setPartyError(data.error ?? "Error"); return; }
+      if (!res.ok) { setPartyError(data.error ?? "Error"); return false; }
       setParties(data.parties ?? []);
       setSchedulePartyVisible(data.schedulePartyVisible ?? {});
       setShowJoinForm(false);
       setPartyCodeInput("");
-    } catch { setPartyError("Network error."); }
-    finally { setPartyAction(false); }
+      return true;
+    } catch {
+      setPartyError("Network error.");
+      return false;
+    } finally { setPartyAction(false); }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (status !== "authenticated" || partyLoading || partyAction) return;
+
+    const code = normalizePartyCode(
+      new URLSearchParams(window.location.search).get("join") || ""
+    );
+
+    if (!code) return;
+    if (parties.some((party) => normalizePartyCode(party.code) === code)) {
+      clearJoinQueryParam();
+      return;
+    }
+    if (inviteJoinAttemptedRef.current === code) return;
+
+    inviteJoinAttemptedRef.current = code;
+
+    void joinParty(code).then((joined) => {
+      if (joined) {
+        clearJoinQueryParam();
+      } else {
+        inviteJoinAttemptedRef.current = null;
+      }
+    });
+  }, [
+    clearJoinQueryParam,
+    joinParty,
+    parties,
+    partyAction,
+    partyLoading,
+    status,
+  ]);
 
   const leaveParty = useCallback(async (partyId: string) => {
     setPartyAction(true);
@@ -311,17 +362,26 @@ export default function ProfilePage({
   }, []);
 
   const cancelProfileEdit = useCallback(() => {
-    const prev = preEditRef.current;
-    if (prev) {
-      setProfileName(prev.name);
-      setProfileImage(prev.image);
-    }
     setEditingProfile(false);
   }, []);
 
   const commitProfileEdit = useCallback(async () => {
     const trimmed = profileName.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setToastMessage("Name cannot be empty");
+      setCopyToast(false);
+      if (copyToastTimeoutRef.current) clearTimeout(copyToastTimeoutRef.current);
+      setCopyToastKey((k) => k + 1);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setCopyToast(true);
+          copyToastTimeoutRef.current = setTimeout(() => {
+            setCopyToast(false);
+          }, 2000);
+        });
+      });
+      return;
+    }
     await saveProfileValues(trimmed, profileImage);
     setEditingProfile(false);
   }, [profileImage, profileName, saveProfileValues]);
@@ -387,7 +447,9 @@ export default function ProfilePage({
         });
       }
       // Re-trigger toast visually even if already visible.
-      setToastMessage("Link copied to clipboard!");
+      setToastMessage(
+        type === "code" ? "Invite link copied to clipboard!" : "Link copied to clipboard!"
+      );
       setCopyToast(false);
       if (copyToastTimeoutRef.current) clearTimeout(copyToastTimeoutRef.current);
       setCopyToastKey((k) => k + 1);
@@ -515,7 +577,7 @@ export default function ProfilePage({
                 />
               </div>
 
-              <div className="min-w-0 flex-1 flex flex-col justify-center gap-2">
+              <div className="min-w-0 flex-1 flex flex-col justify-center gap-1.5">
                 {editingProfile ? (
                   <input
                     ref={nameInputRef}
@@ -533,10 +595,7 @@ export default function ProfilePage({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => {
-                      preEditRef.current = { name: profileName, image: profileImage };
-                      setEditingProfile(true);
-                    }}
+                    onClick={() => setEditingProfile(true)}
                     className="w-full text-left font-display text-lg font-semibold leading-snug tracking-tight text-muted transition-colors hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 sm:text-xl py-0.5 rounded-sm"
                     aria-label="Edit display name"
                   >
@@ -561,10 +620,7 @@ export default function ProfilePage({
                 <div className="flex shrink-0 flex-col items-end justify-center self-start sm:self-center">
                   <button
                     type="button"
-                    onClick={() => {
-                      preEditRef.current = { name: profileName, image: profileImage };
-                      setEditingProfile(true);
-                    }}
+                    onClick={() => setEditingProfile(true)}
                     className="scratch-pill px-2.5 py-1.5 text-[12px] font-medium border border-border/50 text-muted/80 hover:bg-[var(--hover-wash)] hover:text-foreground transition-colors"
                     aria-label="Edit profile"
                   >
@@ -586,7 +642,7 @@ export default function ProfilePage({
                 <button
                   type="button"
                   onClick={() => void commitProfileEdit()}
-                  disabled={savingProfile || !profileName.trim()}
+                  disabled={savingProfile}
                   className="scratch-pill px-3 py-1.5 text-[12px] font-medium bg-accent text-on-accent transition hover:bg-[var(--accent-hover-soft)] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {savingProfile ? "Saving…" : "Save"}
@@ -681,7 +737,7 @@ export default function ProfilePage({
                         {party.name}
                       </p>
                       <p className="mt-1 text-[13px] text-muted">
-                        Share this code with friends:
+                        Invite code below. The copy button grabs the full share link:
                       </p>
                       <div className="mt-1 flex items-center gap-1 text-cyan">
                         <span className="select-all font-mono text-lg font-bold tracking-widest">
@@ -689,13 +745,13 @@ export default function ProfilePage({
                         </span>
                         <button
                           type="button"
-                          onClick={() => copyText(party.code, "code", party.id)}
+                          onClick={() => copyText(getInviteUrl(party.code), "code", party.id)}
                           className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-[background-color,color,border-color] duration-75 ease-out ${
                             codeCopiedPartyId === party.id
                               ? "text-cyan bg-[color-mix(in_srgb,var(--teal)_28%,transparent)]"
                               : "text-cyan/90 hover:text-cyan hover:bg-[color-mix(in_srgb,var(--teal)_16%,transparent)] active:bg-[color-mix(in_srgb,var(--teal)_28%,transparent)]"
                           }`}
-                          aria-label="Copy party code"
+                          aria-label="Copy invite link"
                         >
                           <svg
                             viewBox="0 0 24 24"

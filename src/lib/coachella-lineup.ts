@@ -70,6 +70,6 @@ export function enrichDeezerArtistFromLineup(
   const link =
     meta?.spotifyUrl && meta.spotifyUrl.length > 0
       ? meta.spotifyUrl
-      : spotifyArtistSearchUrl(deezer.name);
+      : spotifyArtistSearchUrl(lineupArtist.spotifyName || lineupArtist.name);
   return { image, link };
 }

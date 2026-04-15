@@ -2,90 +2,79 @@
 //
 // HOW THIS WORKS
 // --------------
-// 1. **Ground truth** is approximate *path distance* between stage areas (miles), not drive distance.
-//    Values are calibrated to common attendee reports (e.g. main field ↔ Sahara often cited as ~12–20 min
-//    depending on crowds) and typical festival maps. They are still **estimates** — real time varies with
-//    crowd flow, route choice, and heat.
-// 2. **Minutes** are derived from distance ÷ `FESTIVAL_WALK_MPH` (crowded festival walking pace ~2.5 mph).
-//    So time and distance always stay mathematically consistent.
-// 3. If a stage name is missing from the matrix, we fall back to a conservative default segment.
+// 1. Ground truth is approximate path distance between stage areas (miles), not drive distance.
+// 2. Base connections were re-tuned from the official 2026 venue map plus attendee-reported walk times
+//    for major legs like Main ↔ Outdoor, Gobi ↔ Mojave, and Main/Outdoor ↔ Sahara.
+// 3. We model the grounds as a graph of common walking corridors, then derive a full all-stages matrix
+//    with shortest paths. That keeps the data internally consistent as stages move around year to year.
 //
-// For authoritative routing, use official festival maps when on-site.
+// These are still estimates: crowd density, closed lanes, and your actual route can move the real walk a lot.
 
-import { type Stage } from "./coachella-data";
+import { STAGES, type Stage } from "./coachella-data";
 
 /** Crowded festival walking speed used to convert path miles → minutes (mph). */
 export const FESTIVAL_WALK_MPH = 2.5;
 
-/**
- * Approximate walking path length between stage areas (miles), symmetric.
- * Diagonal = same as reverse. Tune against on-site experience over time.
- */
-const MILES_BETWEEN: Record<Stage, Record<Stage, number>> = {
-  "Coachella Stage": {
-    "Coachella Stage": 0,
-    "Outdoor Theater": 0.12,
-    Sonora: 0.42,
-    Gobi: 0.34,
-    Mojave: 0.32,
-    Sahara: 0.78,
-    Yuma: 0.82,
-  },
-  "Outdoor Theater": {
-    "Coachella Stage": 0.12,
-    "Outdoor Theater": 0,
-    Sonora: 0.38,
-    Gobi: 0.28,
-    Mojave: 0.26,
-    Sahara: 0.7,
-    Yuma: 0.74,
-  },
-  Sonora: {
-    "Coachella Stage": 0.42,
-    "Outdoor Theater": 0.38,
-    Sonora: 0,
-    Gobi: 0.22,
-    Mojave: 0.2,
-    Sahara: 0.52,
-    Yuma: 0.56,
-  },
-  Gobi: {
-    "Coachella Stage": 0.34,
-    "Outdoor Theater": 0.28,
-    Sonora: 0.22,
-    Gobi: 0,
-    Mojave: 0.06,
-    Sahara: 0.4,
-    Yuma: 0.44,
-  },
-  Mojave: {
-    "Coachella Stage": 0.32,
-    "Outdoor Theater": 0.26,
-    Sonora: 0.2,
-    Gobi: 0.06,
-    Mojave: 0,
-    Sahara: 0.38,
-    Yuma: 0.42,
-  },
-  Sahara: {
-    "Coachella Stage": 0.78,
-    "Outdoor Theater": 0.7,
-    Sonora: 0.52,
-    Gobi: 0.4,
-    Mojave: 0.38,
-    Sahara: 0,
-    Yuma: 0.1,
-  },
-  Yuma: {
-    "Coachella Stage": 0.82,
-    "Outdoor Theater": 0.74,
-    Sonora: 0.56,
-    Gobi: 0.44,
-    Mojave: 0.42,
-    Sahara: 0.1,
-    Yuma: 0,
-  },
-};
+type StageEdge = readonly [from: Stage, to: Stage, miles: number];
+
+// Approximate corridor legs from the 2026 venue map.
+// Calibration notes:
+// - Main ↔ Outdoor is a short cross-field move (~5 min).
+// - Gobi ↔ Mojave is essentially adjacent (~1-2 min).
+// - Main/Outdoor ↔ Sahara is one of the longest common walks on the grounds.
+const STAGE_EDGES: readonly StageEdge[] = [
+  ["Coachella Stage", "Outdoor Theater", 0.12],
+  ["Coachella Stage", "Sonora", 0.24],
+  ["Coachella Stage", "Gobi", 0.3],
+  ["Coachella Stage", "Yuma", 0.24],
+  ["Outdoor Theater", "Sonora", 0.16],
+  ["Outdoor Theater", "Gobi", 0.22],
+  ["Outdoor Theater", "Heineken House", 0.18],
+  ["Outdoor Theater", "Yuma", 0.2],
+  ["Sonora", "Gobi", 0.14],
+  ["Sonora", "Mojave", 0.18],
+  ["Sonora", "Heineken House", 0.1],
+  ["Sonora", "Yuma", 0.28],
+  ["Gobi", "Mojave", 0.06],
+  ["Gobi", "Heineken House", 0.1],
+  ["Gobi", "Quasar", 0.22],
+  ["Mojave", "Heineken House", 0.16],
+  ["Mojave", "Quasar", 0.18],
+  ["Quasar", "Do LaB", 0.16],
+  ["Quasar", "Sahara", 0.3],
+  ["Do LaB", "The Bunker", 0.07],
+  ["Do LaB", "Sahara", 0.2],
+  ["The Bunker", "Sahara", 0.1],
+] as const;
+
+function buildMilesBetween(): Record<Stage, Record<Stage, number>> {
+  const matrix = Object.fromEntries(
+    STAGES.map((from) => [
+      from,
+      Object.fromEntries(
+        STAGES.map((to) => [to, from === to ? 0 : Number.POSITIVE_INFINITY])
+      ),
+    ])
+  ) as Record<Stage, Record<Stage, number>>;
+
+  for (const [from, to, miles] of STAGE_EDGES) {
+    matrix[from][to] = Math.min(matrix[from][to], miles);
+    matrix[to][from] = Math.min(matrix[to][from], miles);
+  }
+
+  for (const via of STAGES) {
+    for (const from of STAGES) {
+      for (const to of STAGES) {
+        const throughVia = matrix[from][via] + matrix[via][to];
+        if (throughVia < matrix[from][to]) matrix[from][to] = throughVia;
+      }
+    }
+  }
+
+  return matrix;
+}
+
+const MILES_BETWEEN = buildMilesBetween();
 
 const FALLBACK_LEG_MILES = 0.35;
 
@@ -144,7 +133,7 @@ export function getDistanceColor(minutes: number): string {
 
 // Nearby stage groups for quick reference
 export const STAGE_CLUSTERS = {
-  main: ["Coachella Stage", "Outdoor Theater"] as Stage[],
-  middle: ["Gobi", "Mojave", "Sonora"] as Stage[],
-  far: ["Sahara", "Yuma"] as Stage[],
+  main: ["Coachella Stage", "Outdoor Theater", "Yuma"] as Stage[],
+  middle: ["Sonora", "Gobi", "Mojave", "Heineken House"] as Stage[],
+  south: ["Quasar", "Do LaB", "The Bunker", "Sahara"] as Stage[],
 };
