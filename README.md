@@ -14,24 +14,11 @@ pnpm dev
 bun dev
 ```
 
-Open either [http://127.0.0.1:3000](http://127.0.0.1:3000) or [http://localhost:3000](http://localhost:3000) with your browser to see the result, but keep that host consistent with your Spotify redirect URI.
+Open either [http://127.0.0.1:3000](http://127.0.0.1:3000) or [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Spotify Auth Notes
-
-This app uses Spotify's Authorization Code Flow for user sign-in and token exchange. The Spotify reference for that flow is:
-
-- [Authorization Code Flow | Spotify for Developers](https://developer.spotify.com/documentation/web-api/tutorials/code-flow)
-
-When testing locally, make sure the Spotify app's redirect URI exactly matches the host you are using in the browser. Common options are:
-
-- `http://127.0.0.1:3000/api/auth/callback`
-- `http://localhost:3000/api/auth/callback`
-
-Spotify treats `127.0.0.1` and `localhost` as different redirect URIs.
 
 ## Learn More
 
