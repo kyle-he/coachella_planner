@@ -1162,7 +1162,7 @@ export default function SchedulePage({
             {partyStacksEnabled && parties.length > 0 && (
               <div className="px-5 py-2.5">
                 <p className="mb-2 font-display text-sm font-semibold text-foreground/90">
-                  Going
+                  Going ({goingToThisSet.length})
                 </p>
                 {goingToThisSet.length > 0 ? (
                   <ul className="space-y-2">
@@ -1630,7 +1630,7 @@ export default function SchedulePage({
             {partyStacksEnabled && parties.length > 0 ? (
               <div className="px-4 py-2.5">
                 <p className="mb-2 font-display text-sm font-semibold text-foreground/90">
-                  Going
+                  Going ({goingToThisSet.length})
                 </p>
                 {goingToThisSet.length > 0 ? (
                   <ul className="space-y-2">
