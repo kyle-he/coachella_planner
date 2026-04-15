@@ -1453,7 +1453,10 @@ export default function SchedulePage({
               </span>
               <button
                 type="button"
-                onClick={() => void fetchParties({ showLoading: true })}
+                onClick={() => {
+                  hapticNudge();
+                  void fetchParties({ showLoading: true });
+                }}
                 disabled={partyRefreshing}
                 className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
@@ -1506,7 +1509,10 @@ export default function SchedulePage({
                   <div className="flex items-center gap-3 shrink-0">
                       <button
                         type="button"
-                        onClick={() => void fetchParties({ showLoading: true })}
+                        onClick={() => {
+                          hapticNudge();
+                          void fetchParties({ showLoading: true });
+                        }}
                         disabled={partyRefreshing}
                         className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -1515,7 +1521,10 @@ export default function SchedulePage({
                       {userPlanListForDay.recs.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => clearPlanForDay(selectedDay)}
+                        onClick={() => {
+                          hapticNudge();
+                          clearPlanForDay(selectedDay);
+                        }}
                         className="text-[12px] text-muted/60 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
                       >
                         Clear day
