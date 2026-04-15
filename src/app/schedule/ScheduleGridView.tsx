@@ -480,7 +480,7 @@ export const PartyMemberAvatarStack = memo(function PartyMemberAvatarStack({
       ))}
       {overflow > 0 && (
         <span
-          className={`ml-2 inline-flex items-center text-[11px] leading-none ${
+          className={`ml-2 inline-flex items-center text-[11px] font-semibold leading-[16px] ${
             inPlan
               ? "text-[color-mix(in_srgb,var(--cream)_78%,transparent)]"
               : "text-muted"
