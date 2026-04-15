@@ -31,6 +31,7 @@ import type {
 import {
   getShowPopularSongs,
 } from "@/lib/schedule-preferences";
+import { hapticNudge, hapticSuccess } from "@/lib/haptics";
 
 /** Cached Deezer enrichments from `/api/recommendations` (images + previews). */
 const SCHEDULE_REC_CACHE_KEY = "coachella:scheduleRecommendations:v1";
@@ -880,10 +881,15 @@ export default function SchedulePage({
     gridItems.length === 0 ? "list" : scheduleLayout;
 
   const handleGridTogglePlan = useCallback(
-    (rowKey: string) => {
+    (rowKey: string, currentlyInPlan: boolean) => {
       const rec = dayRecByRowKey.get(rowKey);
       if (!rec) return;
       togglePlanItem(selectedDay, recIdentityKey(rec));
+      if (currentlyInPlan) {
+        hapticNudge();
+      } else {
+        hapticSuccess();
+      }
     },
     [dayRecByRowKey, selectedDay, togglePlanItem]
   );
@@ -905,8 +911,10 @@ export default function SchedulePage({
     (rowKey: string | null) => {
       if (rowKey === null) {
         setExpandedArtistSafely(null);
+        hapticNudge();
         return;
       }
+      hapticNudge();
       setExpandedArtistSafely(expandedArtist === rowKey ? null : rowKey);
     },
     [expandedArtist, setExpandedArtistSafely]
@@ -1056,7 +1064,10 @@ export default function SchedulePage({
         {/* Main row */}
         <button
           type="button"
-          onClick={() => setExpandedArtistSafely(isExpanded ? null : key)}
+          onClick={() => {
+            hapticNudge();
+            setExpandedArtistSafely(isExpanded ? null : key);
+          }}
           className={`group schedule-artist-btn w-full text-left ${
             isExpanded ? "border-b border-border/30" : ""
           } ${
@@ -1353,6 +1364,7 @@ export default function SchedulePage({
                   key={day.id}
                   type="button"
                   onClick={() => {
+                    hapticNudge();
                     stopPlayback();
                     setExpandedArtist(null);
                     setSelectedDay(day.id);
@@ -1377,6 +1389,7 @@ export default function SchedulePage({
                 <button
                   type="button"
                   onClick={() => {
+                    hapticNudge();
                     stopPlayback();
                     setExpandedArtist(null);
                     setScheduleLayout("list");
@@ -1392,6 +1405,7 @@ export default function SchedulePage({
                 <button
                   type="button"
                   onClick={() => {
+                    hapticNudge();
                     stopPlayback();
                     setExpandedArtist(null);
                     setScheduleLayout("grid");
@@ -1577,8 +1591,10 @@ export default function SchedulePage({
                 onClick={() => {
                   if (isSelectedInPlan) {
                     removeFromPlan(selectedDay, selectedKey);
+                    hapticNudge();
                   } else {
                     addToPlan(selectedDay, selectedKey);
+                    hapticSuccess();
                   }
                 }}
                 className={`scratch-pill shrink-0 px-3 py-1.5 text-[12px] font-medium transition-colors ${
@@ -1591,7 +1607,10 @@ export default function SchedulePage({
               </button>
               <button
                 type="button"
-                onClick={() => setExpandedArtistSafely(null)}
+                onClick={() => {
+                  hapticNudge();
+                  setExpandedArtistSafely(null);
+                }}
                 className="scratch-pill shrink-0 px-3 py-1.5 text-[12px] font-medium text-muted hover:text-foreground"
               >
                 Close

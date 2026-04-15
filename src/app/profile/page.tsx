@@ -9,6 +9,7 @@ import {
   getShowPopularSongs,
   setShowPopularSongsPreference,
 } from "@/lib/schedule-preferences";
+import { hapticNudge, hapticSuccess, hapticToast } from "@/lib/haptics";
 
 interface PartyMember {
   email: string;
@@ -197,6 +198,7 @@ export default function ProfilePage({
       setSchedulePartyVisible(data.schedulePartyVisible ?? {});
       setShowCreateForm(false);
       setPartyNameInput("");
+      hapticSuccess();
     } catch { setPartyError("Network error."); }
     finally { setPartyAction(false); }
   }, []);
@@ -221,6 +223,7 @@ export default function ProfilePage({
       setSchedulePartyVisible(data.schedulePartyVisible ?? {});
       setShowJoinForm(false);
       setPartyCodeInput("");
+      hapticSuccess();
       return true;
     } catch {
       setPartyError("Network error.");
@@ -277,6 +280,7 @@ export default function ProfilePage({
       if (res.ok) {
         setParties(data.parties ?? []);
         setSchedulePartyVisible(data.schedulePartyVisible ?? {});
+        hapticNudge();
       }
     } catch { setPartyError("Network error."); }
     finally { setPartyAction(false); }
@@ -487,6 +491,12 @@ export default function ProfilePage({
       // non-fatal
     }
   }, []);
+
+  useEffect(() => {
+    if (copyToast) {
+      hapticToast(toastMessage);
+    }
+  }, [copyToast, toastMessage]);
 
   useEffect(() => {
     return () => {
@@ -792,7 +802,10 @@ export default function ProfilePage({
                     </div>
                     <button
                       type="button"
-                      onClick={() => leaveParty(party.id)}
+                    onClick={() => {
+                      hapticNudge();
+                      void leaveParty(party.id);
+                    }}
                       disabled={partyAction}
                       className="text-[12px] text-muted/70 hover:text-foreground transition-colors shrink-0 mt-1"
                     >
@@ -855,14 +868,24 @@ export default function ProfilePage({
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => { setShowCreateForm(true); setShowJoinForm(false); setPartyError(null); }}
+                    onClick={() => {
+                      hapticNudge();
+                      setShowCreateForm(true);
+                      setShowJoinForm(false);
+                      setPartyError(null);
+                    }}
                     className="scratch-pill px-4 py-2 text-[13px] font-medium bg-accent text-on-accent hover:bg-[var(--accent-hover-soft)] transition-colors"
                   >
                     Create a party
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowJoinForm(true); setShowCreateForm(false); setPartyError(null); }}
+                    onClick={() => {
+                      hapticNudge();
+                      setShowJoinForm(true);
+                      setShowCreateForm(false);
+                      setPartyError(null);
+                    }}
                     className="scratch-pill px-4 py-2 text-[13px] font-medium border border-border/50 text-foreground hover:bg-[var(--hover-wash)] transition-colors"
                   >
                     Join with code
